@@ -1,4 +1,7 @@
-This is your new Play 2.1 application
-=====================================
+# Play Sample App for EC2
 
-This file will be packaged with your application, when using `play dist`.
+
+
+
+
+
