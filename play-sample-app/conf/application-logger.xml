@@ -1,0 +1,38 @@
+<configuration>
+
+    <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel" />
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${application.home}/logs/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${application.home}/logs/app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- or whenever the file size reaches 100MB -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+
+            <!-- keep the latest 60 files (at most 60 days of files with less than 100Mb of logs per day) -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%-60(%d{HH:mm:ss.SSS} [%thread]) %-20([%.-1level][%logger{32}]) - %message%n%xException%n</pattern>
+            <outputPatternAsHeader>true</outputPatternAsHeader>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-60(%d{HH:mm:ss.SSS} [%thread]) %-20([%.-1level][%logger{32}]) - %message%n%xException%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="INFO" />
+    <logger name="application" level="INFO" />
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>
