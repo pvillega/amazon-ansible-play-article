@@ -1,9 +1,16 @@
-@(title: String)(content: Html)
+@(title: String, nav: String = "")(content: Html)
+
+@import be.objectify.deadbolt.java.views.html._
+@import be.objectify.deadbolt.core.utils.TemplateUtils._
 
 <!DOCTYPE html>
+<html lang="@lang().code()">
+    <head>    
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Play AWS Sample app">
+        <meta name="author" content="@@pvillega">
 
-<html>
-    <head>
         <title>@title</title>
         <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
 
@@ -14,24 +21,81 @@
 
         @* Local css/ Javascript *@
         <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-        @* Bootstrap margin fix *@
-        <style type="text/css">
-            body {
-                margin-top: 50px;
-            }
-        </style>
+        <script src="@routes.Application.jsRoutes" defer="defer"></script>
+
+        <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+          <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
     </head>
     <body>
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
                 <div class="container-fluid">
-                    <a id="titleLink" class="brand" href="/">@Messages("app.title")</a>
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a id="titleLink" class="brand" href="@routes.Application.index()">@Messages("app.title")</a>
+
+                    <div class="btn-group pull-right">
+                        @subjectPresentOr() {
+                            @defining(Application.getLocalUser(session())) { user =>
+                                <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                                  <i class="icon-user"></i> @user.name
+                                  <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                  <li><a href="@routes.Application.profile()">@Messages("playauthenticate.navigation.profile")</a></li>
+                                  <li><a href="@routes.Account.link()">@Messages("playauthenticate.navigation.link_more")</a></li>
+                                  <li class="divider"></li>
+                                  <li><a href="@com.feth.play.module.pa.controllers.routes.Authenticate.logout()"><i class="icon-off"></i> @Messages("playauthenticate.navigation.logout")</a></li>
+                                </ul>
+                            }
+                        }{
+                            <a href="@routes.Application.login()" class="btn btn-primary btn-mini @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
+                        }
+                    </div>
+
+                      
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            <li class="@("active".when(nav == ""))"><a href="@routes.Application.index()">@Messages("playauthenticate.navigation.home")</a></li>
+                            <li class="@("active".when(nav == "restricted"))"><a href="@routes.Application.restricted()">@Messages("playauthenticate.navigation.restricted")</a></li>
+
+                            @subjectNotPresent() {
+                                <li class="@("active".when(nav == "signup"))"><a href="@routes.Application.signup()">@Messages("playauthenticate.navigation.signup")</a></li>
+                            }
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="container">
+            @* display messages *@
+            @if(flash.contains(Application.FLASH_ERROR_KEY)) {
+              <div class="alert alert-error">
+                @flash().get(Application.FLASH_ERROR_KEY)
+              </div>
+            }
+            @if(flash.contains(Application.FLASH_MESSAGE_KEY)) {
+              <div class="alert alert-success">
+                @flash().get(Application.FLASH_MESSAGE_KEY)
+              </div>
+            }
+
+            @* body content inserted here *@
             @content
+
+            <hr>
+            <footer>
+                <p>&copy; 2012-2013 <a href="https://twitter.com/pvillega">@@pvillega</a>. Licensed under Apache License, Version 2.0.</p>
+                <p>
+                    <small>Authentication system based on <a href="https://github.com/joscha/play-authenticate/">Play Authenticate</a> and its sample application. Styles by <a href="http://twitter.github.com/bootstrap/index.html" target="_blank">Twitter Bootstrap</a> &middot; Provider icons by <a href="http://prlloyd.com/Pf4al8" target="_blank">Paul Robert Lloyd</a></small>
+                </p>
+            </footer>
         </div>
 
     </body>

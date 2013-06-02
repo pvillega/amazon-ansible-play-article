@@ -1,21 +1,3 @@
-# Play Sample App for EC2
-
-TODO: expand readme
-
-
-# WebJars
-
-We use [Webjars](http://www.webjars.org) to pull Javascript dependencies
-
-
-# Play Authenticate
-
- More providers available
- More I18N files available in sample app
- App uses sample app for login process
-
-# License
-
 Copyright 2013 Pere Villega
 
 Licensed under the Apache License, Version 2.0 (the "License");
