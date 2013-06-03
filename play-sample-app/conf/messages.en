@@ -1,4 +1,11 @@
-app.title=Play Sample Application
+app.title=AWS Sample Application
+app.index.intro=Sample Play application that shows integration with AWS services
+app.index.heading1=Extensible
+app.index.content1=This sample application contains a basic logic that can be easily extended to fulfill your needs
+app.index.heading2=Secured
+app.index.content2=User authentication and authorization included thanks to Play Authenticate and Deadbolt 2, state of the art modules for the Java version of Play Framework
+app.index.heading3=Integrated
+app.index.content3=The application connects with 3rd party services, a standard requirement of any modern application
 
 # Override default Play's validation messages
 

@@ -54,7 +54,7 @@
                                 </ul>
                             }
                         }{
-                            <a href="@routes.Application.login()" class="btn btn-primary btn-mini @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
+                            <a href="@routes.Application.login()" class="btn btn-primary btn @("disabled".when(nav == "login"))">@Messages("playauthenticate.navigation.login")</a>
                         }
                     </div>
 
@@ -62,8 +62,9 @@
                     <div class="nav-collapse">
                         <ul class="nav">
                             <li class="@("active".when(nav == ""))"><a href="@routes.Application.index()">@Messages("playauthenticate.navigation.home")</a></li>
-                            <li class="@("active".when(nav == "restricted"))"><a href="@routes.Application.restricted()">@Messages("playauthenticate.navigation.restricted")</a></li>
-
+                            @subjectPresent(){
+                                <li class="@("active".when(nav == "restricted"))"><a href="@routes.Application.restricted()">@Messages("playauthenticate.navigation.restricted")</a></li>
+                            }
                             @subjectNotPresent() {
                                 <li class="@("active".when(nav == "signup"))"><a href="@routes.Application.signup()">@Messages("playauthenticate.navigation.signup")</a></li>
                             }
