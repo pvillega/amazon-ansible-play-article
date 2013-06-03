@@ -2,6 +2,10 @@
 
 TODO: expand readme
 
+# Database
+mysql
+awsService
+aws/password
 
 # WebJars
 
