@@ -1,0 +1,69 @@
+@(tags: List[models.dynamo.Tag], photos: List[models.dynamo.Photo])
+
+@main(Messages("app.menu.photos")) {
+    
+    <h1>@Messages("app.menu.photos")</h1>
+    <div class="row">
+        <div class="span4">
+            <h2>@Messages("app.trending.tags")</h2>
+            <ul id="tagList" class="nav nav-pills nav-stacked">
+            @tags.map { t =>
+                <li id="@t.getId()"><a href="#" onclick="javascript:loadImages('@t.getId()');">@t.getName()</a></li>
+            }
+            </ul>
+        </div>
+        <div class="span8">
+            <h2>@Messages("app.trending.images")</h2>
+            <ul id="photosList" class="thumbnails">
+            </ul>
+        </div>
+    </div>
+    <script>
+        function loadImages(tagId) {
+            $("#tagList li").removeClass("active");
+            $("#"+tagId).addClass("active");
+            messageToList('@Messages("app.trending.loadingData")');
+
+            $.getJSON('/getImagesForTag',
+                {tag: tagId})
+            .done(function( json ) {
+                $("#photosList").empty();
+
+                $.each( json.images, function( i, image ) {
+
+                    var li = $("<li/>");
+                    li.addClass("span3").appendTo("#photosList");
+
+                    var a = $("<a/>");
+                    a.addClass("thumbnail").attr("href", image.image).appendTo(li);
+
+                    var img = $("<img/>");
+                    img.attr("src", image.thumbnail).attr("alt", image.text).appendTo(a);
+                });
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                var err = textStatus + ', ' + error;
+                console.log(err);
+
+                messageToList('@Messages("app.trending.noData")');
+            });
+        }
+
+        function messageToList(text){
+            $("#photosList").empty();
+            var li = $("<li/>");
+            li.addClass("span3").appendTo("#photosList");
+            li.text(text);
+        }
+
+        $(function(){
+            // select first element to show images
+            $("#tagList li").removeClass("active");
+            var defaultli = $("#tagList li:first");
+            defaultli.addClass("active")
+
+            // load images for selected tag
+            loadImages(defaultli.attr("id"));
+        });
+    </script>
+}

@@ -1,11 +1,18 @@
 app.title=AWS Sample Application
 app.index.intro=Sample Play application that shows integration with AWS services
+app.index.description=The application allows logged in users to browse trending photos from Flickr. The trending tags are retrieved asynchronously by a background job and stored in DynamoDB. On user request, stored photos are displayed. User details are stored using MySQL in RDS.
 app.index.heading1=Extensible
 app.index.content1=This sample application contains a basic logic that can be easily extended to fulfill your needs
 app.index.heading2=Secured
 app.index.content2=User authentication and authorization included thanks to Play Authenticate and Deadbolt 2, state of the art modules for the Java version of Play Framework
 app.index.heading3=Integrated
 app.index.content3=The application connects with 3rd party services, a standard requirement of any modern application
+
+app.menu.photos=Top Photos
+app.trending.tags=Tags
+app.trending.images=Images
+app.trending.noData=No Images loaded
+app.trending.loadingData=Loading images, please wait...
 
 # Override default Play's validation messages
 

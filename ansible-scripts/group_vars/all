@@ -1,0 +1,29 @@
+# Contains specific variables to be used when deploying to any subgroup
+# These variables will then be used in the Playbooks
+# For example, we could set here values like the administration email to get system notifications, which will be common to all servers 
+
+# adminEmail: myemail@admin.com
+---
+#  List of vars used by common role
+ubuntu_release: quantal
+ec2_user: ubuntu
+logwatch_email: your.admin.email@mail.com
+
+# List of vars used by webtier role
+user: ubuntu
+group: $user
+play_version: 2.1.1
+home: /home/ubuntu
+pvm: /home/ubuntu/pvm
+pvm_path: ${home}/pvm/install/$play_version
+repo_pvm_url: git://github.com/kaiinkinen/pvm.git
+repo_pvm_remote: origin
+repo_pvm_version: master
+repo_url: git://github.com/pvillega/personal-page.git 
+repo_remote: origin
+repo_version: master
+dest: ${home}/projectClone
+project_version: 1.2
+project: personal-page-$project_version
+
+

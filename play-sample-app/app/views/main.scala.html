@@ -63,7 +63,7 @@
                         <ul class="nav">
                             <li class="@("active".when(nav == ""))"><a href="@routes.Application.index()">@Messages("playauthenticate.navigation.home")</a></li>
                             @subjectPresent(){
-                                <li class="@("active".when(nav == "restricted"))"><a href="@routes.Application.restricted()">@Messages("playauthenticate.navigation.restricted")</a></li>
+                                <li class="@("active".when(nav == "restricted"))"><a href="@routes.Application.seePhotos()">@Messages("app.menu.photos")</a></li>
                             }
                             @subjectNotPresent() {
                                 <li class="@("active".when(nav == "signup"))"><a href="@routes.Application.signup()">@Messages("playauthenticate.navigation.signup")</a></li>

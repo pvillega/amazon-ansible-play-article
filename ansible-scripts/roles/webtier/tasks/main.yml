@@ -1,0 +1,88 @@
+# Sets the Play environment in the server and depploys a given application
+---
+- name: Install Unzip
+  action: apt pkg=unzip state=latest install_recommends=yes    
+
+- name: Install Git
+  action: apt pkg=git state=latest install_recommends=yes    
+
+- name: Install Authbind
+  action: apt pkg=authbind state=latest install_recommends=yes    
+
+- name: Configure Authbind
+  action: copy content="" dest=/etc/authbind/byport/80 owner=$user group=$group mode=0500 
+
+- name: Remove old PVM checkouts
+  action: file path=${pvm} state=absent
+
+- name: Checkout PVM from Git
+  action: git repo=$repo_pvm_url dest=$pvm remote=$repo_pvm_remote version=$repo_pvm_version
+
+- name: Turn PVM into bash script
+  action: lineinfile dest=${pvm}/pvm.sh regexp="^# Play Version Manager" line="#!/bin/bash" state=present
+
+- name: Set PVM environment and install Play $play_version
+  action: raw . ${pvm}/pvm.sh && pvm install $play_version && pvm use $play_version
+
+- name: Set $user as PVM owner
+  action: file path=${pvm} owner=$user group=$group recurse=yes  state=directory
+
+- name: Add Java repository to sources
+  action: apt_repository repo='ppa:webupd8team/java'
+
+- name: Autoaccept license for Java
+  action: shell echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+
+- name: Update APT package cache
+  action: apt update_cache=yes
+
+- name: Install Java 7
+  action: apt pkg=oracle-java7-installer state=latest install_recommends=yes    
+
+- name: Set Java 7 Env
+  action: apt pkg=oracle-java7-set-default state=latest install_recommends=yes
+
+# Now we deploy the project directly from git
+
+- name: Remove old checkouts (just in case they are still in there)
+  action: file path=${dest} state=absent
+
+- name: Checkout project from Git
+  action: git repo=$repo_url dest=$dest remote=$repo_remote version=$repo_version
+
+# Create distribution async, polling every 10s (Default) for a max of 15m (60s * 15m = 900s)
+- name: Create Dist deployment
+  action: shell cd ${dest} && ${pvm_path}/play dist 
+  async: 900
+
+# We ignore errors as there may be no running Java process	
+- name: Kill old processes to free ports and memory and so we can redeploy
+  action: command killall java -q
+  ignore_errors: yes
+
+- name: Remove old deployment folder
+  action: file path=${home}/$project state=absent
+
+- name: Remove old zip file
+  action: file path=${home}/$project.zip state=absent
+
+- name: Copy zip to home folder
+  action: command cp ${dest}/dist/$project.zip ${home}/
+
+- name: Unpack project
+  action: command unzip $project.zip chdir=${home} 
+
+- name: Remove old zip file (let's clean the house a bit)
+  action: file path=${home}/$project.zip state=absent
+
+- name: Remove old checkouts (let's clean the house a bit)
+  action: file path=${dest} state=absent
+
+# Launch project (asynchronously with fire-and-forget behaviour)
+- name: Launch project
+  action: shell nohup ${home}/$project/start  
+  async: 10
+  poll: 0
+
+
+

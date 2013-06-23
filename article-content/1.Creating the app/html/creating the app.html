@@ -1,0 +1,1316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 4.0.2.2 (Linux)">
+	<META NAME="AUTHOR" CONTENT="pvillega ">
+	<META NAME="CREATED" CONTENT="20130618;20432000">
+	<META NAME="CHANGEDBY" CONTENT="pvillega ">
+	<META NAME="CHANGED" CONTENT="20130623;22045500">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm }
+		H1.western { font-family: "Arial", sans-serif; font-size: 16pt }
+		H1.cjk { font-family: "DejaVu Sans"; font-size: 16pt }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 16pt }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Arial", sans-serif; font-size: 14pt; font-style: italic }
+		H2.cjk { font-size: 14pt; font-style: italic }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 14pt; font-style: italic }
+		H3 { margin-bottom: 0.21cm }
+		H3.western { font-family: "Arial", sans-serif }
+		H3.ctl { font-family: "Lohit Hindi" }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		H4 { margin-bottom: 0.21cm }
+		H4.western { font-family: "Arial", sans-serif; font-size: 11pt; font-style: italic }
+		H4.cjk { font-size: 11pt; font-style: italic }
+		H4.ctl { font-family: "Lohit Hindi"; font-size: 11pt; font-style: italic }
+		A:link { so-language: zxx }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-IE" DIR="LTR">
+<H1 LANG="en-GB" CLASS="western">Amazon AWS, Ansible and Play
+Framework</H1>
+<P LANG="en-GB"><A HREF="http://aws.amazon.com/">Amazon AWS</A>
+provides an excellent platform to manage your applications. It
+reduces the amount of time you have to spend on syadmin tasks and
+turns scaling the application into something simple. <A HREF="http://www.playframework.com/">Play
+framework</A> is a modern Java framework that unites the productivity
+of Ruby on Rails with the reliability and performance of the Java
+Virtual Machine. <A HREF="http://www.ansibleworks.com/docs/">Ansible</A>
+is an excellent tool to manage your servers with minimal effort,
+using plain text files to set them up and providing all the
+capabilities you have come to expect from a DevOps tool.</P>
+<P LANG="en-GB">This article shows how to use these 3 modern
+technologies to build, deploy and scale a web application deployed in
+AWS. The sample code and the Ansible scripts are available in <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>.</P>
+<H1 LANG="en-GB" CLASS="western">Building the sample Play application</H1>
+<P LANG="en-GB">The first step is to create our Play Framework
+application. The purpose is to create a sample with basic
+functionality that can be extended later as required. To that aim, we
+provide a skeleton that covers common needs like authentication or
+connection to multiple databases.</P>
+<P LANG="en-GB">The application consists on a page that displays the
+most popular tags in <A HREF="http://www.flickr.com/">Flickr</A> and,
+once a tag is selected, a list of photos with that tag is shown to
+the user. Access to the page that displays the images is secured,
+requiring authentication by the user. Photos' details are loaded via
+a background task and stored in <A HREF="http://aws.amazon.com/dynamodb/">DynamoD</A><A HREF="http://aws.amazon.com/dynamodb/">B</A>,
+while user data is stored in a MySQL database provided by <A HREF="http://aws.amazon.com/rds/">Amazon
+RDS</A>.</P>
+<H2 LANG="en-GB" CLASS="western">Description of Technologies</H2>
+<P LANG="en-GB">This section summarizes the most relevant components
+used to build the application. The purpose is to familiarize
+ourselves with the different elements we can find when browsing the
+code or when extending the application for our own purposes.</P>
+<H3 LANG="en-GB" CLASS="western">Play Framework</H3>
+<P><A HREF="http://www.playframework.com/">Play Framework</A><SPAN LANG="en-GB">
+is a modern framework to build highly-scalable applications using
+Java (</SPAN><SPAN LANG="en-GB">as in </SPAN><SPAN LANG="en-GB">our
+scenario) or Scala. </SPAN><SPAN LANG="en-GB">One of the main
+benefits of Play is its productivity: the framework provides many
+helpers and embedded APIs that simplify common tasks like doing
+requests to other web sites or validating user submitted data. This
+translates in</SPAN><SPAN LANG="en-GB">to</SPAN><SPAN LANG="en-GB">
+less time spent in </SPAN><SPAN LANG="en-GB">writing </SPAN><SPAN LANG="en-GB">boilerplate
+and more time </SPAN><SPAN LANG="en-GB">spent </SPAN><SPAN LANG="en-GB">creating
+the logic of your application.</SPAN></P>
+<P><SPAN LANG="en-GB">Play is a stateless framework, which makes it a
+perfect choice for cloud environments like Amazon AWS. Being
+stateless means that any Play deployment lacks the concept of a
+Session object like </SPAN><SPAN LANG="en-GB">the one </SPAN><SPAN LANG="en-GB">a
+traditional JEE container </SPAN><SPAN LANG="en-GB">provide</SPAN><SPAN LANG="en-GB">s.
+Instead, Play provides a cryptographically secured cookie as a
+limited and temporary storage for data. When a request hits a server,
+the application receives the cookie and can retrieve the
+authentication status of the user, </SPAN><SPAN LANG="en-GB">and any
+other stored data,</SPAN><SPAN LANG="en-GB"> from it.</SPAN><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB">The overhead </SPAN><SPAN LANG="en-GB">of
+this step</SPAN><SPAN LANG="en-GB"> is negligible when using caches
+and it simplifies application deployment in cloud environments, </SPAN><SPAN LANG="en-GB">as
+in the cloud a </SPAN><SPAN LANG="en-GB">server could fail at any
+time </SPAN><SPAN LANG="en-GB">and its session objects would be gone</SPAN><SPAN LANG="en-GB">.</SPAN><SPAN LANG="en-GB">
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+                       </SPAN>
+</P>
+<H3 LANG="en-GB" CLASS="western">Akka 
+</H3>
+<P><A HREF="http://akka.io/">Akka</A><SPAN LANG="en-GB"> is a tookit
+to build fault tolerant applications in the JVM, using either Java or
+Scala. Play Framework is built on top of Akka, which means that when
+you create a Play application you get access to all the Akka
+functionality, including Actor systems and remoting.</SPAN></P>
+<P><SPAN LANG="en-GB">A </SPAN><SPAN LANG="en-GB">benefit</SPAN><SPAN LANG="en-GB">
+of this integration is the creation of different execution contexts.
+An execution context can </SPAN><SPAN LANG="en-GB">be considered, in
+a very simplified definition, as a thread pool reserved to run a
+task, usually an actor. These threads will only be used by that
+actor, which allows you to isolate slow tasks in its own thread pool
+and to avoid any impact on the performance of other parts of the
+application.</SPAN></P>
+<P><SPAN LANG="en-GB">In this application we use Akka as a cron </SPAN><SPAN LANG="en-GB">job
+manager</SPAN><SPAN LANG="en-GB">. Akka provides a scheduler from
+which you can send a message to an actor at a given time. As this
+task is completely asynchronous, this allows you to run heavy lifting
+tasks (in this scenario, querying the Flickr API to obtain data on a
+few hundred images) without any performance impact in the processing
+of Http requests, as they run in different execution contexts.</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">WebJars</H3>
+<P><A HREF="http://www.webjars.org/">WebJars</A><SPAN LANG="en-GB">
+are client side libraries, like </SPAN><A HREF="http://jquery.com/">Jquery</A><SPAN LANG="en-GB">,
+packaged as Jars. This has two big benefits. First, we can manage the
+dependencies in the client side libraries easily, avoiding clashes
+between versions and removing issues caused by transitive
+dependencies. Second, we can manage these dependencies via standard
+tools like Ivy, Maven or SBT, as we are working with Jars.</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">Ebean</H3>
+<P><A HREF="http://www.avaje.org/">Ebean</A><SPAN LANG="en-GB"> is a
+JPA compliant ORM, used by Play Framework as the default ORM. Being
+JPA compliant, in the application we define our database model as
+simple POJOs with annotations and the system will generate the
+necessary queries to retrieve the data from the database.</SPAN></P>
+<P LANG="en-GB">Ebean provides advanced capabilities, like automatic
+ddl generation based on the application model, but we are not using
+them in this project.</P>
+<H3 LANG="en-GB" CLASS="western">Bootstrap</H3>
+<P><A HREF="http://twitter.github.io/bootstrap/index.html">Bootstrap</A><SPAN LANG="en-GB">
+has become the de-facto front-end framework for web development.
+Bootstrap provides a  cross-browser set of tools, including a
+responsive layout, default styles and useful Javascript libraries.
+</SPAN><SPAN LANG="en-GB">This</SPAN><SPAN LANG="en-GB"> allow</SPAN><SPAN LANG="en-GB">s
+</SPAN><SPAN LANG="en-GB">developers to produce good looking web
+applications with minimal effort and without having to be Css
+experts.</SPAN></P>
+<P LANG="en-GB">In this application we load Bootstrap via WebJars.</P>
+<H3 LANG="en-GB" CLASS="western">Play Authenticate</H3>
+<P><A HREF="http://joscha.github.io/play-authenticate/">Play
+Authenticate</A><SPAN LANG="en-GB"> is one of several authentication
+plugins for Play Framework. For anyone familiar with Play Framework,
+it is similar to </SPAN><A HREF="http://securesocial.ws/">SecureSocial</A><SPAN LANG="en-GB">
+but it is tailored to work only with Java. There is a sample
+application for Play Authenticate which we use as a the starting
+point for our project.</SPAN></P>
+<P><SPAN LANG="en-GB">Play Authenticate provides both authentication
+and authorization. The authentication system allows a user to
+register with a username and password or to provide credentials via
+well know</SPAN><SPAN LANG="en-GB">n </SPAN><SPAN LANG="en-GB">3</SPAN><SUP><SPAN LANG="en-GB">rd</SPAN></SUP><SPAN LANG="en-GB">
+party systems like Twitter or Facebook, using </SPAN><SPAN LANG="en-GB">the</SPAN><SPAN LANG="en-GB">
+OAuth protocol. The authorization system is provided by </SPAN><A HREF="https://github.com/schaloner/deadbolt-2">Deadbolt
+2</A><SPAN LANG="en-GB">.</SPAN></P>
+<P LANG="en-GB">In the application we use this component to limit
+access to the page that contains the images. Only authenticated users
+are allowed to see that area of the website.</P>
+<H3 LANG="en-GB" CLASS="western">Amazon AWS: RDS MySQL</H3>
+<P><A HREF="http://aws.amazon.com/rds/">Amazon RDS</A><SPAN LANG="en-GB">
+provides on demand relational databases. The service has high
+reliability and manages backups and other sysadmin tasks, freeing you
+from having to spend time in them. </SPAN>
+</P>
+<P><SPAN LANG="en-GB">In this application we use MySQL to store all
+user-related data as required by Play Authenticate. There is a </SPAN><SPAN LANG="en-GB"><I>models</I></SPAN><SPAN LANG="en-GB">
+folder in the application that contains all the POJOs annotated with
+Ebean.</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">Amazon AWS: DynamoDB</H3>
+<P><A HREF="http://aws.amazon.com/dynamodb/">Amazon DynamoDB</A><SPAN LANG="en-GB">
+provides a fast and scalable NoSQL database, similar to </SPAN><A HREF="http://basho.com/riak/">Riak</A><SPAN LANG="en-GB">.
+It enforces some limitations, like maximum size of stored elements,
+but in exchange you get a very fast service that can evolve along
+your data, </SPAN><SPAN LANG="en-GB">a benefit of</SPAN><SPAN LANG="en-GB">
+not having a fixed schema </SPAN><SPAN LANG="en-GB">in the database</SPAN><SPAN LANG="en-GB">.
+The service manages common tasks like maintenance of backups
+automatically, letting you focus on development. </SPAN>
+</P>
+<P><SPAN LANG="en-GB">In the application we use DynamoDB to store
+</SPAN><SPAN LANG="en-GB">meta</SPAN><SPAN LANG="en-GB">data about
+tags and images </SPAN><SPAN LANG="en-GB">obtained from Flickr. The
+data is all text </SPAN><SPAN LANG="en-GB">(String)</SPAN><SPAN LANG="en-GB">
+and includes </SPAN><SPAN LANG="en-GB">information like </SPAN><SPAN LANG="en-GB">the
+name of a tag or the url of an image. By using DynamoDB we can later
+on extend the model as required </SPAN><SPAN LANG="en-GB">and</SPAN><SPAN LANG="en-GB">
+with minimal effort, adding new </SPAN><SPAN LANG="en-GB">fields</SPAN><SPAN LANG="en-GB">
+like how many users </SPAN><SPAN LANG="en-GB">vote</SPAN><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB">for </SPAN><SPAN LANG="en-GB">a particular
+image or how many time</SPAN><SPAN LANG="en-GB">s</SPAN><SPAN LANG="en-GB">
+has a particular tag become popular.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Constructing the Application</H2>
+<P><SPAN LANG="en-GB">In this section we describe how to build the
+application itself. Instead of describing every single step in
+detail, we focus on the main areas of the website and what is needed
+to build them. Please check the source code in </SPAN><A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB">to see the full implementation.</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">Install Play</H3>
+<P LANG="en-GB">To install Play Framework simply follow the
+<A HREF="http://www.playframework.com/documentation/2.1.1/Installing">instructions</A>
+in the website. You want to download the latest release (at the time
+of this writing, Play 2.1.1) and unzip the file in a folder of your
+choice. Then add the folder to your <I>PATH</I> as per your system
+specification.</P>
+<P LANG="en-GB">Once this is done, run the <SPAN STYLE="font-style: normal">command:</SPAN></P>
+<P LANG="en-GB">    <SPAN STYLE="font-style: normal">$</SPAN><I>play</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">in a terminal window. You
+should get an output like this:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_m56cc6ad4.png" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=317 BORDER=0 ><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">It s</SPAN><SPAN STYLE="font-style: normal">how</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
+that Play 2.1.1 has been installed and, in red, that the current
+folder is not a valid Play application. </SPAN>
+</P>
+<P LANG="en-GB">If you are going to work with several Play projects,
+I advise you to check <A HREF="https://github.com/kaiinkinen/pvm">Play
+Version Manager</A>, a tool that allows you to swap between different
+Play Framework versions in one single machine. The steps to install
+it are outside the scope of this document, but it's simple enough and
+a good choice if you will work a lot with Play Framework.</P>
+<H3 LANG="en-GB" CLASS="western">Create the Application</H3>
+<P LANG="en-GB">Once we have installed Play, we can create the
+application. Run the command:</P>
+<P LANG="en-GB">    <I>$play new play-sample-app</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">and Play prompts you to
+select a name for the application and to select if you want a simple
+Java or Scala application. Select a simple Java application, and the
+basic layout will be created. The output should be similar to the one
+in the following image:</P>
+<P LANG="en-GB"><IMG SRC="creating%20the%20app_html_m4da4f377.png" NAME="graphics2" ALIGN=LEFT WIDTH=643 HEIGHT=383 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB">The structure generated by the command contains the
+following folders:</P>
+<UL>
+	<LI><P><SPAN LANG="en-GB"><B>app:</B></SPAN><SPAN LANG="en-GB">
+	stores all the source files (.java) and the views (.html) of the
+	application</SPAN></P>
+	<LI><P><B><SPAN LANG="en-GB">conf: </SPAN></B><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">the
+	folder has the configuration of the application, including I18N,
+	routing and plugins enabled for the project</SPAN></SPAN></P>
+	<LI><P><B><SPAN LANG="en-GB">project:</SPAN></B><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">
+	this folder contains project configuration, mainly dependencies and
+	sbt-related properties</SPAN></SPAN></P>
+	<LI><P><B><SPAN LANG="en-GB">public:</SPAN></B><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">
+	stores all the static resources like images, css and javascript
+	files</SPAN></SPAN></P>
+	<LI><P><B><SPAN LANG="en-GB">test: </SPAN></B><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">the
+	folder contains the unit tests and functional tests of the
+	application</SPAN></SPAN></P>
+</UL>
+<P LANG="en-GB" STYLE="font-weight: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-weight: normal">To ensure that the
+application works, enter the folder and run:</P>
+<P LANG="en-GB" STYLE="font-weight: normal">    <I>$play run</I></P>
+<P STYLE="font-style: normal"><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">This
+launch</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">es</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">
+the development server at </SPAN></SPAN><B><A HREF="http://localhost:9000/">http://localhost:9000</A></B><SPAN LANG="en-GB"><I><SPAN STYLE="font-weight: normal">
+,</SPAN></I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-weight: normal">
+with output as follows:</SPAN></SPAN></P>
+<P LANG="en-GB" STYLE="font-weight: normal"><IMG SRC="creating%20the%20app_html_m44b3ac29.png" NAME="graphics4" ALIGN=LEFT WIDTH=643 HEIGHT=383 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal; font-weight: normal">Accessing
+that address displays the default application:</P>
+<P STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_m2dcc88f8.png" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+</P>
+<H3 CLASS="western"><SPAN LANG="en-GB">Add dependencies</SPAN></H3>
+<P><SPAN LANG="en-GB">Now that we have a running project, the </SPAN><SPAN LANG="en-GB">next</SPAN><SPAN LANG="en-GB">
+step </SPAN><SPAN LANG="en-GB">is</SPAN><SPAN LANG="en-GB"> to add
+the external dependencies of our application. As mentioned above, we
+</SPAN><SPAN LANG="en-GB">are</SPAN><SPAN LANG="en-GB"> </SPAN><SPAN LANG="en-GB">using
+</SPAN><SPAN LANG="en-GB">Web</SPAN><SPAN LANG="en-GB">J</SPAN><SPAN LANG="en-GB">ars,
+Amazon AWS, MySQL and other </SPAN><SPAN LANG="en-GB">components</SPAN><SPAN LANG="en-GB">.
+For Play to recognize them, we have to define these dependencies in
+SBT, so the corresponding jars can be retrieved.</SPAN></P>
+<P><SPAN LANG="en-GB">The file that defines the dependencies is
+located at </SPAN><SPAN LANG="en-GB"><I>project/Build.scala</I></SPAN><SPAN LANG="en-GB">.
+Dependencies are usually retrieved from standard repositories like
+<A HREF="http://search.maven.org/">Maven Central</A>, but in some
+cases we want to pull them from other locations </SPAN><SPAN LANG="en-GB">a</SPAN><SPAN LANG="en-GB">s
+</SPAN><SPAN LANG="en-GB">the files are not stored in Maven Central</SPAN><SPAN LANG="en-GB">.
+This means that we have to define both </SPAN><SPAN LANG="en-GB"><I>dependencies
+</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">and
+</SPAN></SPAN><SPAN LANG="en-GB"><I>resolvers</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+in this file.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><I>Dependencies</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">indicate
+a jar we want to add to our application classpath and </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">are
+defined as a sequence in the file. </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">D</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">ependencies
+follow the format:</SPAN></SPAN></P>
+<P>    “<SPAN LANG="en-GB"><I>&lt;group&gt;” % “&lt;artifact&gt;”
+% “&lt;version&gt;”</I></SPAN></P>
+<P STYLE="font-style: normal"><SPAN LANG="en-GB">For example, the
+dependency for Webjars is defined as:</SPAN></P>
+<P STYLE="font-style: normal">    <SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN></SPAN><SPAN LANG="en-GB">
+</SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB">%%</SPAN></FONT><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;webjars-play&quot;</SPAN></SPAN><SPAN LANG="en-GB">
+</SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB">%</SPAN></FONT><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;2.1.0-2&quot;</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">While the
+dependency for MySQL is defined as:</SPAN></SPAN></P>
+<P>    <SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;mysql&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;mysql-connector-java&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;5.1.25&quot;</SPAN></SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">As we
+mentioned above, by using Web</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">J</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">ars
+we can import Javascript libraries via our dependencies. In our
+application we import Bootstrap this way. Bootstrap has a dependency
+in Jquery, which means that by including Bootstrap we have access to
+both Boostrap and Jquery in our project. The dependency on Bootstrap
+is defined as:</SPAN></SPAN></P>
+<P>    <SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;bootstrap&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;2.3.2&quot;</SPAN></SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">Play provides
+some keywords to define common dependencies for Play projects, that
+way instead of adding the full structure we can use the keyword to
+define that dependency. For example, to import Ebean we can write:</SPAN></SPAN></P>
+<P>    <SPAN LANG="en-GB"><I>javaEbean</I></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">and Play will
+resolve that to the correct dependency when compiling.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><I>Resolvers</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+are </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">location
+where we can find jars that can de used as dependencies. </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">A
+resolver has two parts, a name and a url. The name is a human
+readable name used for developers to identify the repository, while
+the url is the location where files not available in Maven Central
+may be located. </SPAN></SPAN>
+</P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">An example of
+a resolver is:</SPAN></SPAN></P>
+<P>    <SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">resolvers
+</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">+=</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+</SPAN></SPAN><FONT COLOR="#b00060"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><B>Resolver</B></SPAN></SPAN></FONT><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">url</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">(</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;play-easymail
+(release)&quot;</SPAN></SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+url</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">(</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;<A HREF="http://joscha.github.com/">http://joscha.github.com</A>”</SPAN></SPAN></SPAN><SPAN LANG="en-GB">))(Resolver.ivyStylePatterns)</SPAN></P>
+<P><SPAN LANG="en-GB">This resolver contains jars for </SPAN><SPAN LANG="en-GB"><I>play-easymail</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+which are stored in a Github repository. When compiling, SBT will
+check this repository for files it has not been able to locate in
+other locations. If SBT can't locate a dependency in any of the
+defined resolvers nor in the default ones (Maven Central) compilation
+will fail.</SPAN></SPAN></P>
+<P LANG="en-GB"><A NAME="__DdeLink__1037_1353322844"></A>The final
+version of the file, including all the dependencies, will look like
+this:</P>
+<TABLE WIDTH=1276 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=1248>
+	<TR>
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27</PRE>
+		</TD>
+		<TD WIDTH=1248 STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#008000"><B>object</B></FONT> <FONT COLOR="#b00060"><B>ApplicationBuild</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> <FONT COLOR="#b00060"><B>Build</B></FONT> <FONT COLOR="#303030">{</FONT>
+
+  <FONT COLOR="#008000"><B>val</B></FONT> appName         <FONT COLOR="#008000"><B>=</B></FONT> <SPAN STYLE="background: #fff0f0">&quot;play-sample-app&quot;</SPAN>
+  <FONT COLOR="#008000"><B>val</B></FONT> appVersion      <FONT COLOR="#008000"><B>=</B></FONT> <SPAN STYLE="background: #fff0f0">&quot;1.0-SNAPSHOT&quot;</SPAN>
+
+  <FONT COLOR="#008000"><B>val</B></FONT> appDependencies <FONT COLOR="#008000"><B>=</B></FONT> <FONT COLOR="#b00060"><B>Seq</B></FONT><FONT COLOR="#303030">(</FONT>
+    javaCore<FONT COLOR="#303030">,</FONT>
+    javaJdbc<FONT COLOR="#303030">,</FONT>
+    javaEbean<FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN> <FONT COLOR="#303030">%%</FONT> <SPAN STYLE="background: #fff0f0">&quot;webjars-play&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.1.0-2&quot;</SPAN><FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;bootstrap&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.3.2&quot;</SPAN><FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;com.amazonaws&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;aws-java-sdk&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;1.4.5&quot;</SPAN><FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;com.feth&quot;</SPAN> <FONT COLOR="#303030">%%</FONT> <SPAN STYLE="background: #fff0f0">&quot;play-authenticate&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;0.2.5-SNAPSHOT&quot;</SPAN><FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;be.objectify&quot;</SPAN>  <FONT COLOR="#303030">%%</FONT>  <SPAN STYLE="background: #fff0f0">&quot;deadbolt-java&quot;</SPAN>     <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.1-SNAPSHOT&quot;</SPAN><FONT COLOR="#303030">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;mysql&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;mysql-connector-java&quot;</SPAN> <FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;5.1.25&quot;</SPAN>
+  <FONT COLOR="#303030">)</FONT>
+
+  <FONT COLOR="#008000"><B>val</B></FONT> main <FONT COLOR="#008000"><B>=</B></FONT> play<FONT COLOR="#303030">.</FONT><FONT COLOR="#b00060"><B>Project</B></FONT><FONT COLOR="#303030">(</FONT>appName<FONT COLOR="#303030">,</FONT> appVersion<FONT COLOR="#303030">,</FONT> appDependencies<FONT COLOR="#303030">).</FONT>settings<FONT COLOR="#303030">(</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Objectify Play Repository (release)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://schaloner.github.com/releases/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">),</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Objectify Play Repository (snapshot)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://schaloner.github.com/snapshots/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">),</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-easymail (release)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-easymail/repo/releases/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">),</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-easymail (snapshot)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-easymail/repo/snapshots/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">),</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-authenticate (release)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-authenticate/repo/releases/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">),</FONT>
+    resolvers <FONT COLOR="#303030">+=</FONT> <FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-authenticate (snapshot)&quot;</SPAN><FONT COLOR="#303030">,</FONT> url<FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-authenticate/repo/snapshots/&quot;</SPAN><FONT COLOR="#303030">))(</FONT><FONT COLOR="#b00060"><B>Resolver</B></FONT><FONT COLOR="#303030">.</FONT>ivyStylePatterns<FONT COLOR="#303030">)</FONT>
+  <FONT COLOR="#303030">)</FONT>
+
+<FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P><BR><BR>
+</P>
+<H3 LANG="en-GB" CLASS="western">Add Play Authenticate</H3>
+<P><SPAN LANG="en-GB">Once we have the dependencies defined, the next
+step is to integrate Play Authenticate. Play Authenticate comes with
+a sample application that includes a Bootstrap layout and basic
+functionality required in any working application, like resending
+registration emails to users or merging different </SPAN><SPAN LANG="en-GB">external</SPAN><SPAN LANG="en-GB">
+accounts f</SPAN><SPAN LANG="en-GB">or</SPAN><SPAN LANG="en-GB"> a
+given user.</SPAN></P>
+<P><SPAN LANG="en-GB">We</SPAN><SPAN LANG="en-GB"> use th</SPAN><SPAN LANG="en-GB">e
+Play Authenticate</SPAN><SPAN LANG="en-GB"> sample application as a
+basis for </SPAN><SPAN LANG="en-GB">our</SPAN><SPAN LANG="en-GB">
+layout. There are several files copied over , including images, views
+and controllers. Only the most relevant elements are discussed in
+this section, </SPAN><SPAN LANG="en-GB">the remainder can be checked
+in the source code we provide</SPAN><SPAN LANG="en-GB">.</SPAN></P>
+<H4 CLASS="western"><SPAN LANG="en-GB">Configuration</SPAN></H4>
+<P LANG="en-GB"><A NAME="__DdeLink__1039_1353322844"></A>The first
+component we talk about is the configuration. Configuration files for
+Play Authenticate are located in two folders, <I>conf </I><SPAN STYLE="font-style: normal">
+and </SPAN><I>conf/play-authenticate.</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">The folder 
+<I>conf/play-authenticate</I> contains configuration specific to
+components of Play Authenticate. For example, the file <I>deadbolt.conf</I>
+defines the handler for Authorization in the application, while
+<I>smtp.conf</I> includes all the SMTP mailer settings that allow the
+website to send emails to the user. By default we are using a mock
+SMTP server.</P>
+<P LANG="en-GB" STYLE="font-style: normal">The file <I>mine.conf </I>has
+the settings required to authenticate via external services like
+Twitter, using OAuth, including consumer and secret keys. The
+application sample you can find in Github already provides keys for
+some of these services, so you can test this integration without
+having to register a new application. 
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The folder</SPAN><I>
+conf</I><SPAN STYLE="font-style: normal"> contains two files relevant
+to Play Authenticate. The first one is </SPAN><I>play.plugins, </I><SPAN STYLE="font-style: normal">which
+ defines a list of plugins to be loaded by the application on
+startup. As you can see in the following listing of the contents:</SPAN></P>
+<PRE LANG="en-GB" CLASS="western">
+<SPAN LANG="en-GB"><SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>1500</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>com.typesafe.plugin.CommonsMailerPlugin</B></FONT></SPAN></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10000</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>be.objectify.deadbolt.java.DeadboltPlugin</B></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10005</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>service.MyUserServicePlugin</B></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10010</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>com.feth.play.module.pa.providers.oauth2.google.GoogleAuthProvider</B></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10020</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>com.feth.play.module.pa.providers.oauth2.facebook.FacebookAuthProvider</B></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10040</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>providers.MyUsernamePasswordAuthProvider</B></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#0000d0"><B>10060</B></FONT><FONT COLOR="#008000"><B>:</B></FONT><FONT COLOR="#303090"><B>com.feth.play.module.pa.providers.oauth1.twitter.TwitterAuthProvider</B></FONT></SPAN></PRE><P LANG="en-GB">
+We define which Play authenticate modules we want to use. As an
+example, removing the TwitterAuthProvider entry from the file and
+restarting the server would disable authentication via Twitter OAuth
+service.</P>
+<P LANG="en-GB">The second relevant file is <I>messages.en </I><SPAN STYLE="font-style: normal">which
+has the I18N keys for the application. In this </SPAN><SPAN STYLE="font-style: normal">website
+</SPAN><SPAN STYLE="font-style: normal"> we only provide the file for
+English, but you could easily create a </SPAN><I>messages.es</I><SPAN STYLE="font-style: normal">
+file and provide </SPAN><SPAN STYLE="font-style: normal">a </SPAN><SPAN STYLE="font-style: normal">
+Spanish translation for the website, including all the Play
+Authenticate screens.</SPAN></P>
+<H4 LANG="en-GB" CLASS="western"><A NAME="__DdeLink__1043_1353322844"></A>
+<SPAN STYLE="font-style: normal">Model</SPAN></H4>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The folder
+</SPAN></SPAN><SPAN LANG="en-GB"><I>app/models</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+contains Ebean entities used by Play Authenticate to store data on
+registered users. The data will be stored in a relational database,
+in </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">our
+website </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">inside
+a MySQL database.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">An example of
+the files included is </SPAN></SPAN><SPAN LANG="en-GB"><I>UserPermission</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,
+a class that stores the access levels available in the system:</SPAN></SPAN></P>
+<P><BR><BR>
+</P>
+<DIV ID="preview" DIR="LTR">
+	<TABLE CELLPADDING=2 CELLSPACING=2>
+		<TR>
+			<TD STYLE="border: none; padding: 0cm">
+				<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23</PRE>
+			</TD>
+			<TD STYLE="border: none; padding: 0cm">
+				<PRE CLASS="western"><FONT COLOR="#505050"><B>@Entity</B></FONT>
+<FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>UserPermission</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> Model <FONT COLOR="#008000"><B>implements</B></FONT> Permission <FONT COLOR="#303030">{</FONT>
+        <FONT COLOR="#808080">/**</FONT>
+<FONT COLOR="#808080">         * </FONT>
+<FONT COLOR="#808080">         */</FONT>
+        <FONT COLOR="#008000"><B>private</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> <FONT COLOR="#303090"><B>long</B></FONT> serialVersionUID <FONT COLOR="#303030">=</FONT> <FONT COLOR="#0000d0"><B>1L</B></FONT><FONT COLOR="#303030">;</FONT>
+
+        <FONT COLOR="#505050"><B>@Id</B></FONT>
+        <FONT COLOR="#008000"><B>public</B></FONT> Long id<FONT COLOR="#303030">;</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> String value<FONT COLOR="#303030">;</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> Model<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Finder</FONT><FONT COLOR="#303030">&lt;</FONT>Long<FONT COLOR="#303030">,</FONT> UserPermission<FONT COLOR="#303030">&gt;</FONT> find <FONT COLOR="#303030">=</FONT> <FONT COLOR="#008000"><B>new</B></FONT> Model<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Finder</FONT><FONT COLOR="#303030">&lt;</FONT>Long<FONT COLOR="#303030">,</FONT> UserPermission<FONT COLOR="#303030">&gt;(</FONT>
+                        Long<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">class</FONT><FONT COLOR="#303030">,</FONT> UserPermission<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">class</FONT><FONT COLOR="#303030">);</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> String <FONT COLOR="#0060b0"><B>getValue</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> value<FONT COLOR="#303030">;</FONT>
+        <FONT COLOR="#303030">}</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> UserPermission <FONT COLOR="#0060b0"><B>findByValue</B></FONT><FONT COLOR="#303030">(</FONT>String value<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> find<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">where</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">eq</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;value&quot;</SPAN><FONT COLOR="#303030">,</FONT> value<FONT COLOR="#303030">).</FONT><FONT COLOR="#0000c0">findUnique</FONT><FONT COLOR="#303030">();</FONT>
+        <FONT COLOR="#303030">}</FONT>
+<FONT COLOR="#303030">}</FONT></PRE>
+			</TD>
+		</TR>
+	</TABLE>
+</DIV>
+<DIV ID="footer" DIR="LTR">
+	<P><BR><BR>
+	</P>
+</DIV>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">As you can see
+in lines 1 and 8, this class follows standard JPA annotations (Ebean
+is JPA compliant) and it </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">also
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">includes
+some support methods to search for specific instances of the class in
+the database.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The default
+model classes included shouldn't be extended, as they are used by
+Play Authenticate and any modification may cause issues in the
+authentication and authorization system. But feel free to use them as
+templates for your own model classes.</SPAN></SPAN></P>
+<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">Controllers</SPAN></H4>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">Play
+Authenticate provides some controllers in the sample application. The
+most relevant is </SPAN></SPAN><SPAN LANG="en-GB"><I>app/controllers/Application.java</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,
+which manages the main urls of the webapp. Remember that in a Play
+Framework application the mapping between url and controller is
+defined inside </SPAN></SPAN><SPAN LANG="en-GB"><I>conf/routes</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The
+Application controller is a good example on how to secure methods. An
+extract of its contents follows:</SPAN></SPAN></P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>Application</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> Controller <FONT COLOR="#303030">{</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> String FLASH_MESSAGE_KEY <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;message&quot;</SPAN><FONT COLOR="#303030">;</FONT>
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> String FLASH_ERROR_KEY <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;error&quot;</SPAN><FONT COLOR="#303030">;</FONT>
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> String USER_ROLE <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;user&quot;</SPAN><FONT COLOR="#303030">;</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>index</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> <FONT COLOR="#0060b0"><B>ok</B></FONT><FONT COLOR="#303030">(</FONT>index<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">render</FONT><FONT COLOR="#303030">());</FONT>
+        <FONT COLOR="#303030">}</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> User <FONT COLOR="#0060b0"><B>getLocalUser</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#008000"><B>final</B></FONT> Session session<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>final</B></FONT> AuthUser currentAuthUser <FONT COLOR="#303030">=</FONT> PlayAuthenticate<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getUser</FONT><FONT COLOR="#303030">(</FONT>session<FONT COLOR="#303030">);</FONT>
+                <FONT COLOR="#008000"><B>final</B></FONT> User localUser <FONT COLOR="#303030">=</FONT> User<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">findByAuthUserIdentity</FONT><FONT COLOR="#303030">(</FONT>currentAuthUser<FONT COLOR="#303030">);</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> localUser<FONT COLOR="#303030">;</FONT>
+        <FONT COLOR="#303030">}</FONT>
+
+<FONT COLOR="#505050">        <B>@Restrict</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#505050"><B>@Group</B></FONT><FONT COLOR="#303030">(</FONT>Application<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">USER_ROLE</FONT><FONT COLOR="#303030">))</FONT>
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>profile</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>final</B></FONT> User localUser <FONT COLOR="#303030">=</FONT> getLocalUser<FONT COLOR="#303030">(</FONT>session<FONT COLOR="#303030">());</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> <FONT COLOR="#0060b0"><B>ok</B></FONT><FONT COLOR="#303030">(</FONT>profile<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">render</FONT><FONT COLOR="#303030">(</FONT>localUser<FONT COLOR="#303030">));</FONT>
+        <FONT COLOR="#303030">}</FONT>
+
+        <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>login</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+                <FONT COLOR="#008000"><B>return</B></FONT> <FONT COLOR="#0060b0"><B>ok</B></FONT><FONT COLOR="#303030">(</FONT>login<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">render</FONT><FONT COLOR="#303030">(</FONT>MyUsernamePasswordAuthProvider<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">LOGIN_FORM</FONT><FONT COLOR="#303030">));</FONT>
+        <FONT COLOR="#303030">}</FONT>
+<FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P><BR><BR>
+</P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">If you check
+line 17, you will see that we are restricting access to the </SPAN></SPAN><SPAN LANG="en-GB"><I>profile</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+method so only authenticated users can access it.  </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The
+other methods are not restricted, so any user could potentially
+access them and obtain a response. </SPAN></SPAN>
+</P>
+<H4 CLASS="western"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">WebJars</SPAN></SPAN></H4>
+<P LANG="en-GB">One change over the default layout of Play
+Authenticate is how we include the Bootstrap files. As mentioned
+several times, we use WebJars to add Bootstrap in the application.
+After the dependency was defined in the previous sections, we have to
+load it.</P>
+<P LANG="en-GB">This is achieved by editing the file
+<I>app/views/main/scala/html</I><SPAN STYLE="font-style: normal"> and
+adding the following lines to load the relevant Css and Javascript:</SPAN></P>
+<PRE LANG="en-GB" CLASS="western" STYLE="border: 1px solid #808080; padding: 0.05cm; line-height: 125%"><SPAN STYLE="background: #ffffff"><FONT COLOR="#007000"><SPAN STYLE="font-style: normal">@* Retrieve css/Javascript dependencies via WebJars *@</SPAN></FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;link</FONT> <FONT COLOR="#0000c0">rel=</FONT><SPAN STYLE="background: #fff0f0">'stylesheet' </SPAN><FONT COLOR="#0000c0">href=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;css/bootstrap.min.css&quot;))'</SPAN><FONT COLOR="#007000">&gt;</FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;script </FONT><FONT COLOR="#0000c0">type=</FONT><SPAN STYLE="background: #fff0f0">'text/javascript'</SPAN> <FONT COLOR="#0000c0">src=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;jquery.min.js&quot;))'</SPAN><FONT COLOR="#007000">&gt;&lt;/script&gt;</FONT></SPAN>
+<SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;script </FONT><FONT COLOR="#0000c0">type=</FONT><SPAN STYLE="background: #fff0f0">'text/javascript'</SPAN> <FONT COLOR="#0000c0">src=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;js/bootstrap.min.js&quot;))'</SPAN><FONT COLOR="#007000">&gt;&lt;/script&gt;</FONT></SPAN></PRE><P LANG="en-GB">
+WebJars provide a helper class, <I>WebJarsAssets</I><SPAN STYLE="font-style: normal">,
+which locates the dependencies and provides the proper path to load
+them.</SPAN></P>
+<P LANG="en-GB">Note that we are including also the Javascript for
+Jquery. As mentioned before, Bootstrap has a dependency on Jquery,
+which means that we can also use it in our application.</P>
+<H3 LANG="en-GB" CLASS="western">Connect to Amazon AWS</H3>
+<P LANG="en-GB">Now that we have the layout and the authentication
+component integrated, it is time to use services from Amazon AWS.</P>
+<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">Configuration</SPAN></H4>
+<P LANG="en-GB">To be able to connect to many AWS services from a
+Java application you need the <A HREF="http://aws.amazon.com/sdkforjava/">Amazon
+AWS SDK</A> jar. In the dependencies section we added that jar via
+the following dependency:</P>
+<P LANG="en-GB">    <SPAN STYLE="background: #fff0f0">&quot;com.amazonaws&quot;</SPAN>
+<FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;aws-java-sdk&quot;</SPAN>
+<FONT COLOR="#303030">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;1.4.5&quot;</SPAN></P>
+<P LANG="en-GB"><FONT COLOR="#303030">The SDK provides methods to
+connect to S3, DynamoDB and SQS among other Amazon AWS services. But
+to do so, it requires your Amazon access key and secret key as well
+as the endpoint for the services. You can obtain your access and
+secret key</FONT><FONT COLOR="#303030">s</FONT><FONT COLOR="#303030">
+</FONT><FONT COLOR="#303030">from</FONT><FONT COLOR="#303030"> your
+<A HREF="https://console.aws.amazon.com/iam/home?#security_credential">Amazon
+AWS Management Console.</A> </FONT>
+</P>
+<P LANG="en-GB"><FONT COLOR="#303030">The <A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAMBestPractices.html">best
+practice</A> regarding your keys is to use AWS Identity and Access
+Management (IAM) roles to create limited roles with access to only a
+component, for example a role that can only read from S3. This way,
+even if your keys are leaked, you limit the amount of data an
+attacker may retrieve.  The specific steps on securing the users are
+outside the scope of this chapter, but the <A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html">documentation</A>
+for IAM is very detailed, and </FONT><FONT COLOR="#303030">it shows
+the steps you need to follow to create the roles you need</FONT><FONT COLOR="#303030">.</FONT></P>
+<P LANG="en-GB"><FONT COLOR="#303030">In our sample application the
+Amazon AWS details are stored under the file at
+</FONT><FONT COLOR="#303030"><I>conf/aws/credentials/conf. </I></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">This
+file is a properties file, loaded via </SPAN></FONT><FONT COLOR="#303030"><I>conf/application.conf</I></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">,
+which stores the access and secret keys. It also stores the endpoint
+for DynamoDB, as </SPAN></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">each
+Amazon region is independent and accessing the wrong one means that
+the tables won't exist</SPAN></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">.
+</SPAN></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">The
+default region in the sample application</SPAN></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">
+is set to connect to DynamoDB in Europe
+(</SPAN></FONT><FONT COLOR="#303030"><I>dynamodb.eu-west-1.amazonaws.com</I></FONT><FONT COLOR="#303030"><SPAN STYLE="font-style: normal">).</SPAN></FONT></P>
+<P LANG="en-GB">The configuration file also provides database
+configuration for our Amazon RDS connection details. As Amazon RDS
+gives access to the endpoint of the machine, you can easily generate
+a jdbc url to connect to it.</P>
+<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">MySQL
+Model</SPAN></H4>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">At this point we
+have the jars and the configuration. Now we can define the database
+model. </SPAN><SPAN STYLE="font-style: normal">In this sample
+application w</SPAN><SPAN STYLE="font-style: normal">e use MySQL to
+store the user data generated by Play Authenticate. As mentioned in
+previous sections, </SPAN><SPAN STYLE="font-style: normal">we </SPAN><SPAN STYLE="font-style: normal">use
+Ebean </SPAN><SPAN STYLE="font-style: normal">as ORM </SPAN><SPAN STYLE="font-style: normal">to
+access the data from the tables, via model classes defined at
+</SPAN><I>app/models</I><SPAN STYLE="font-style: normal">. This means
+that we need no </SPAN><SPAN STYLE="font-style: normal">extra </SPAN><SPAN STYLE="font-style: normal">helper
+class</SPAN><SPAN STYLE="font-style: normal">es to save or load the
+data</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">Having the model
+defined in our code, we need to create the corresponding tables in
+the database.</SPAN><SPAN STYLE="font-style: normal"> Play Framework
+provides the <A HREF="http://www.playframework.com/documentation/2.1.1/Evolutions">Evolutions</A>
+system to keep the database schema up to date </SPAN><SPAN STYLE="font-style: normal">automatically</SPAN><SPAN STYLE="font-style: normal">.
+Evolutions </SPAN><SPAN STYLE="font-style: normal">uses</SPAN><SPAN STYLE="font-style: normal">
+SQL file</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
+stored at </SPAN><I>conf/evolutions/default/</I><SPAN STYLE="font-style: normal">
+which contain SQL commands t</SPAN><SPAN STYLE="font-style: normal">hat
+are </SPAN><SPAN STYLE="font-style: normal">run against the database.
+These commands can create or alter tables, insert or remove rows, or
+do any other valid operation.</SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">When the
+application is launched the system checks if any Evolution </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">script
+</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">needs
+to be applied. If required, the relevant commands are executed and
+the database </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">schema
+is updated </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">so
+the application can run as expected.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">What this
+means for us is that, after setting the connection details in our
+configuration files, we don't have to worry about configuring MySQL
+tables as Play Framework takes care of that using the evolution
+script</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">s</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+we provide.</SPAN></SPAN></P>
+<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">DynamoDB</SPAN></H4>
+<P LANG="en-GB">As mentioned before, in the sample application we use
+DynamoDB to store metadata of Flickr images. The steps to configure
+DynamoDB in Amazon AWS are shown in the next article, where we
+configure all the services we need in Amazon AWS. In this section we
+show the parts relevant to our Java application.</P>
+<P LANG="en-GB">The first thing we need to do is to define the model
+we use. DynamoDB has no schema, you just define tables that may store
+any kind of data, with some limitations imposed by the system. To
+facilitate the interaction between our Java code and this NoSQL
+database, Amazon AWS SDK provides some data modelling tools that map
+the data stored in a table to a POJO. One example of such mapping is
+the following file:</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#505050"><B>@DynamoDBTable</B></FONT><FONT COLOR="#303030">(</FONT>tableName <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;tag&quot;</SPAN><FONT COLOR="#303030">)</FONT>
+<FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>Tag</B></FONT> <FONT COLOR="#303030">{</FONT>
+
+    <FONT COLOR="#008000"><B>private</B></FONT> String id<FONT COLOR="#303030">;</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> String name<FONT COLOR="#303030">;</FONT>
+
+    <FONT COLOR="#505050"><B>@DynamoDBHashKey</B></FONT>
+    <FONT COLOR="#505050"><B>@DynamoDBAutoGeneratedKey</B></FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> String <FONT COLOR="#0060b0"><B>getId</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT> <FONT COLOR="#008000"><B>return</B></FONT> id<FONT COLOR="#303030">;</FONT> <FONT COLOR="#303030">}</FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#303090"><B>void</B></FONT> <FONT COLOR="#0060b0"><B>setId</B></FONT><FONT COLOR="#303030">(</FONT>String id<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT> <FONT COLOR="#008000"><B>this</B></FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">id</FONT> <FONT COLOR="#303030">=</FONT> id<FONT COLOR="#303030">;</FONT> <FONT COLOR="#303030">}</FONT>
+
+    <FONT COLOR="#505050"><B>@DynamoDBAttribute</B></FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> String <FONT COLOR="#0060b0"><B>getName</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT> <FONT COLOR="#008000"><B>return</B></FONT> name<FONT COLOR="#303030">;</FONT> <FONT COLOR="#303030">}</FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#303090"><B>void</B></FONT> <FONT COLOR="#0060b0"><B>setName</B></FONT><FONT COLOR="#303030">(</FONT>String name<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT> <FONT COLOR="#008000"><B>this</B></FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">name</FONT> <FONT COLOR="#303030">=</FONT> name<FONT COLOR="#303030">;</FONT> <FONT COLOR="#303030">}</FONT>
+
+ <FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB">As you can see in lines 1, 7, 8 and 12 we use
+annotations to map between this POJO and the contents in DynamoDB.
+The annotations define the table name where the data will be stored
+(line 1), the primary Hash Key and its generation method (lines 7 and
+8) and which fields are to be stored as simple attributes in the
+table (line 12).</P>
+<P LANG="en-GB">We have two of such model classes, stored under
+<I>app/models/dynamo,</I><SPAN STYLE="font-style: normal"> one to map
+tags (</SPAN><I>Tag.java</I><SPAN STYLE="font-style: normal">) and
+one to map photos (</SPAN><I>Photo.java</I><SPAN STYLE="font-style: normal">).
+ </SPAN><SPAN STYLE="font-style: normal">They store metadata for the
+tags and images retrieved from Flickr. The relation between the
+tables is </SPAN><SPAN STYLE="font-style: normal">established</SPAN><SPAN STYLE="font-style: normal">
+via the id (HashKey) of Tag. A photo related to a tag has its id
+(HashKey) set to the id of the Tag to which it belongs. The primary
+key of the image is complemented by a RangeKey on the date the
+metadata of the photo is stored in the database, thus providing a
+valid </SPAN><SPAN STYLE="font-style: normal">composite </SPAN><SPAN STYLE="font-style: normal">key
+for the </SPAN><SPAN STYLE="font-style: normal">row</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<P LANG="en-GB">Retrieving and saving the data from DynamoDB requires
+the use of a <I>DynamoDBMapper</I> class that manages the save and
+load operations. To simplify calls to these operations, a service
+class has been added to <I>app/service/DynamoDBService </I><SPAN STYLE="font-style: normal">which
+provides methods to load and save data to DynamoDB. The service class
+is a singleton implemented as an Enum, and a partial view of its
+implementation follows:</SPAN></P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>enum</B></FONT> DynamoDbService <FONT COLOR="#303030">{</FONT>
+    INSTANCE<FONT COLOR="#303030">;</FONT>
+
+    <FONT COLOR="#808080">// Load AWS keys from configuration</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> String accessKey <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;aws.accessKey&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> String secretKey <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;aws.secretKey&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> String endpoint <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;aws.endpoint&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+
+    <FONT COLOR="#808080">// Set up connection to Dynamo DB</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> AWSCredentials awsCredentials<FONT COLOR="#303030">;</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> AmazonDynamoDB dynamo<FONT COLOR="#303030">;</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> DynamoDBMapper mapper<FONT COLOR="#303030">;</FONT>
+
+    DynamoDbService<FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+        awsCredentials <FONT COLOR="#303030">=</FONT> <FONT COLOR="#008000"><B>new</B></FONT> BasicAWSCredentials<FONT COLOR="#303030">(</FONT>accessKey<FONT COLOR="#303030">,</FONT> secretKey<FONT COLOR="#303030">);</FONT>
+        dynamo <FONT COLOR="#303030">=</FONT> <FONT COLOR="#008000"><B>new</B></FONT> AmazonDynamoDBClient<FONT COLOR="#303030">(</FONT>awsCredentials<FONT COLOR="#303030">);</FONT>
+        dynamo<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setEndpoint</FONT><FONT COLOR="#303030">(</FONT>endpoint<FONT COLOR="#303030">);</FONT>
+        mapper <FONT COLOR="#303030">=</FONT> <FONT COLOR="#008000"><B>new</B></FONT> DynamoDBMapper<FONT COLOR="#303030">(</FONT>dynamo<FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#303030">}</FONT>
+
+    <FONT COLOR="#008000"><B>public</B></FONT> List<FONT COLOR="#303030">&lt;</FONT>Tag<FONT COLOR="#303030">&gt;</FONT> getAllTags<FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+        <FONT COLOR="#008000"><B>final</B></FONT> DynamoDBScanExpression scanExpression <FONT COLOR="#303030">=</FONT> <FONT COLOR="#008000"><B>new</B></FONT> DynamoDBScanExpression<FONT COLOR="#303030">();</FONT>
+        <FONT COLOR="#008000"><B>final</B></FONT> List<FONT COLOR="#303030">&lt;</FONT>Tag<FONT COLOR="#303030">&gt;</FONT> tags <FONT COLOR="#303030">=</FONT> mapper<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">scan</FONT><FONT COLOR="#303030">(</FONT>Tag<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">class</FONT><FONT COLOR="#303030">,</FONT> scanExpression<FONT COLOR="#303030">);</FONT>
+        <FONT COLOR="#008000"><B>return</B></FONT> tags<FONT COLOR="#303030">;</FONT>
+    <FONT COLOR="#303030">}</FONT>
+
+    <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#303090"><B>void</B></FONT> <FONT COLOR="#0060b0"><B>saveTags</B></FONT><FONT COLOR="#303030">(</FONT>List<FONT COLOR="#303030">&lt;</FONT>Tag<FONT COLOR="#303030">&gt;</FONT> tags<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+        mapper<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">batchSave</FONT><FONT COLOR="#303030">(</FONT>tags<FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#303030">}</FONT>
+<FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB">Using an Enum as the implementation of a Singleton is
+currently considered <A HREF="Using an Enum as the implementation of a Singleton is currently considered the best way.">the
+best way</A> to implement Singletons. As you can see on line 14, the
+constructor of the Enum initializes the connection to DynamoDB, using
+the Amazon AWS credentials (access key, secret key and endpoint). 
+</P>
+<P LANG="en-GB">Lines 21 and 27 show operations that load and save
+tags using the SDK. The use of this service allows us to decouple the
+implementation details of connecting to DynamoDB from the controllers
+that will use the service, so we can modify the storage
+implementation with no impact on the rest of the application.</P>
+<H3 LANG="en-GB" CLASS="western">Collect data from Flickr</H3>
+<P LANG="en-GB">At this stage we have created most of the logic
+required by our application. Now we have to implement the retrieval
+of data from Flickr via its <A HREF="http://www.flickr.com/services/api/">API</A>.
+To do that, we take advantage of the integration between Play
+Framework and Akka. We query the API and store the relevant metadata
+in DynamoDB inside an Akka actor, and we set a scheduler  that sends
+a message to that actor every 24h. That way we have the top tags of
+each day stored in our system.</P>
+<H4 CLASS="western">Actor</H4>
+<P LANG="en-GB">The <A HREF="http://doc.akka.io/docs/akka/2.1.4/java/untyped-actors.html">Akka
+actor</A> in our sample application is defined at
+<I>app/actors/RetrieveTagsAndPhotos.java.</I><SPAN STYLE="font-style: normal">
+It is an Untyped Actor that will </SPAN><SPAN STYLE="font-style: normal">get</SPAN><SPAN STYLE="font-style: normal">
+images from Flickr </SPAN><SPAN STYLE="font-style: normal">using its
+API</SPAN><SPAN STYLE="font-style: normal"> when it receives a
+message. The </SPAN><SPAN STYLE="font-style: normal">actor </SPAN><SPAN STYLE="font-style: normal">ignore</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
+the type of message received, any message will trigger the collection
+</SPAN><SPAN STYLE="font-style: normal">of images</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The implementation
+is as follows:</SPAN></P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>RetrieveTagsAndPhotos</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> UntypedActor <FONT COLOR="#303030">{</FONT>
+
+    <FONT COLOR="#008000"><B>final</B></FONT> String key <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;flickr.key&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#008000"><B>final</B></FONT> String secret <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;flickr.secret&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#008000"><B>final</B></FONT> String restUrl <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;flickr.url&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+
+    <FONT COLOR="#808080">/**</FONT>
+<FONT COLOR="#808080">     * When receiving the message it connects to Flickr to retrieve a list of tags and 1 page of photos for each</FONT>
+<FONT COLOR="#808080">     * Only stores new tags</FONT>
+<FONT COLOR="#808080">     * @param message received message (ignored)</FONT>
+<FONT COLOR="#808080">     */</FONT>
+    <FONT COLOR="#505050"><B>@Override</B></FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#303090"><B>void</B></FONT> <FONT COLOR="#0060b0"><B>onReceive</B></FONT><FONT COLOR="#303030">(</FONT>Object message<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Retrieving data in the background&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        <FONT COLOR="#008000"><B>final</B></FONT> DynamoDbService db <FONT COLOR="#303030">=</FONT> DynamoDbService<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">INSTANCE</FONT><FONT COLOR="#303030">;</FONT>
+
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Obtain a list of tags&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        <FONT COLOR="#008000"><B>final</B></FONT> F<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Promise</FONT><FONT COLOR="#303030">&lt;</FONT>play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Response</FONT><FONT COLOR="#303030">&gt;</FONT> resp <FONT COLOR="#303030">=</FONT> play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">url</FONT><FONT COLOR="#303030">(</FONT>restUrl<FONT COLOR="#303030">)</FONT>
+                <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setQueryParameter</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;method&quot;</SPAN><FONT COLOR="#303030">,</FONT> <SPAN STYLE="background: #fff0f0">&quot;flickr.tags.getHotList&quot;</SPAN><FONT COLOR="#303030">)</FONT>
+                <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setQueryParameter</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;api_key&quot;</SPAN><FONT COLOR="#303030">,</FONT> key<FONT COLOR="#303030">)</FONT>
+                <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">get</FONT><FONT COLOR="#303030">();</FONT>
+
+        <FONT COLOR="#008000"><B>final</B></FONT> play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Response</FONT> response <FONT COLOR="#303030">=</FONT> resp<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">get</FONT><FONT COLOR="#303030">();</FONT>
+        <FONT COLOR="#008000"><B>final</B></FONT> List<FONT COLOR="#303030">&lt;</FONT>Tag<FONT COLOR="#303030">&gt;</FONT> tags <FONT COLOR="#303030">=</FONT> Tag<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">convertToTagList</FONT><FONT COLOR="#303030">(</FONT>response<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">asXml</FONT><FONT COLOR="#303030">());</FONT>
+
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Save tags into dynamo db&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        db<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">saveTags</FONT><FONT COLOR="#303030">(</FONT>tags<FONT COLOR="#303030">);</FONT>
+
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Obtain a list of photos for each tag&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        List<FONT COLOR="#303030">&lt;</FONT>Photo<FONT COLOR="#303030">&gt;</FONT> photos<FONT COLOR="#303030">;</FONT>
+        <FONT COLOR="#008000"><B>for</B></FONT><FONT COLOR="#303030">(</FONT>Tag <FONT COLOR="#907000"><B>tag:</B></FONT> tags<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+            Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">debug</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Photos for tag: &quot;</SPAN> <FONT COLOR="#303030">+</FONT> tag<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getName</FONT><FONT COLOR="#303030">());</FONT>
+            <FONT COLOR="#008000"><B>final</B></FONT> F<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Promise</FONT><FONT COLOR="#303030">&lt;</FONT>play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Response</FONT><FONT COLOR="#303030">&gt;</FONT> respImg <FONT COLOR="#303030">=</FONT> play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">url</FONT><FONT COLOR="#303030">(</FONT>restUrl<FONT COLOR="#303030">)</FONT>
+                    <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setQueryParameter</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;method&quot;</SPAN><FONT COLOR="#303030">,</FONT> <SPAN STYLE="background: #fff0f0">&quot;flickr.photos.search&quot;</SPAN><FONT COLOR="#303030">)</FONT>
+                    <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setQueryParameter</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;api_key&quot;</SPAN><FONT COLOR="#303030">,</FONT> key<FONT COLOR="#303030">)</FONT>
+                    <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">setQueryParameter</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;tags&quot;</SPAN><FONT COLOR="#303030">,</FONT> tag<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getName</FONT><FONT COLOR="#303030">())</FONT>
+                    <FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">get</FONT><FONT COLOR="#303030">();</FONT>
+
+            <FONT COLOR="#008000"><B>final</B></FONT> play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">libs</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">WS</FONT><FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">Response</FONT> responseImg <FONT COLOR="#303030">=</FONT> respImg<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">get</FONT><FONT COLOR="#303030">();</FONT>
+            photos <FONT COLOR="#303030">=</FONT> Photo<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">convertToPhotoList</FONT><FONT COLOR="#303030">(</FONT>responseImg<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">asXml</FONT><FONT COLOR="#303030">(),</FONT> tag<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getId</FONT><FONT COLOR="#303030">());</FONT>
+
+            Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Save photos into dynamo db&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+            db<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">savePhotos</FONT><FONT COLOR="#303030">(</FONT>photos<FONT COLOR="#303030">);</FONT>
+        <FONT COLOR="#303030">}</FONT>
+
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;All data retrieved and stored in dynamo db&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#303030">}</FONT>
+<FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The only method in
+the actor is defined at line 13, </SPAN><I>onReceive</I><SPAN STYLE="font-style: normal">.
+This method is executed when the actor receives a message. In the
+implementation, as stated above, we ignore the message itself.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The code connects to
+the Flickr API as we can see in lines 18 and 33, using the </SPAN><I>WS
+</I><SPAN STYLE="font-style: normal">object provi</SPAN><SPAN STYLE="font-style: normal">d</SPAN><SPAN STYLE="font-style: normal">ed
+by Play. </SPAN><I>WS</I><SPAN STYLE="font-style: normal">
+facilitates </SPAN><SPAN STYLE="font-style: normal">creating </SPAN><SPAN STYLE="font-style: normal">requests
+to third party applications, providing helper methods to build the
+request and even sign it if necessary. Fortunately, Flickr provides
+some API methods which don't require authentication, and that
+simplifies the code necessary to </SPAN><SPAN STYLE="font-style: normal">obtain
+the images</SPAN><SPAN STYLE="font-style: normal">. </SPAN>
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">You may notice that
+the calls return a </SPAN><I>Promise</I><SPAN STYLE="font-style: normal">
+that wraps the </SPAN><I>WS.Response</I><SPAN STYLE="font-style: normal">.
+This means that this request is asynchronous; that is, when we
+</SPAN><SPAN STYLE="font-style: normal">execute</SPAN><SPAN STYLE="font-style: normal">
+the </SPAN><I>get</I><SPAN STYLE="font-style: normal"> call in </SPAN><I>WS</I><SPAN STYLE="font-style: normal">
+we don't block the thread </SPAN><SPAN STYLE="font-style: normal">runn</SPAN><SPAN STYLE="font-style: normal">ing
+the code. Instead, Play </SPAN><SPAN STYLE="font-style: normal">processes</SPAN><SPAN STYLE="font-style: normal">
+the request to the target url in the background and we </SPAN><SPAN STYLE="font-style: normal">proceed
+with the rest of the code</SPAN><SPAN STYLE="font-style: normal"> in
+the meantime. Only when we try to access the value contained in the
+</SPAN><I>Promise</I><SPAN STYLE="font-style: normal"> will Play
+block </SPAN><SPAN STYLE="font-style: normal">the thread </SPAN><SPAN STYLE="font-style: normal">if
+the response has not been obtained in the background </SPAN><SPAN STYLE="font-style: normal">before
+getting to that fragment of code</SPAN><SPAN STYLE="font-style: normal">.
+</SPAN>
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">To save the returned
+xml into DynamoDB we use the </SPAN><I>DynamoDBService</I><SPAN STYLE="font-style: normal">
+defined in the previous section, </SPAN><SPAN STYLE="font-style: normal">as
+well as</SPAN><SPAN STYLE="font-style: normal"> some helper methods
+in our model POJOs that map the r</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">turned
+xml to our implementation.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The sample
+application provided already contains valid Flickr API keys, so you
+can retrieve images without having to register a new client in
+Fl</SPAN><SPAN STYLE="font-style: normal">i</SPAN><SPAN STYLE="font-style: normal">ckr.
+You can find the keys </SPAN><SPAN STYLE="font-style: normal">in</SPAN><SPAN STYLE="font-style: normal">
+</SPAN><I>conf/application.conf</I><SPAN STYLE="font-style: normal">,
+at the bottom of the file.</SPAN></P>
+<H4 CLASS="western"><SPAN STYLE="font-style: normal">Scheduler</SPAN></H4>
+<P LANG="en-GB">To set the scheduler, we create a private method in
+our <I>app/Global.java</I> class:</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western">    <FONT COLOR="#808080">/*</FONT>
+<FONT COLOR="#808080">    Schedule Actors to retrieve data in the background, asynchronously</FONT>
+<FONT COLOR="#808080">     */</FONT>
+    <FONT COLOR="#008000"><B>private</B></FONT> <FONT COLOR="#303090"><B>void</B></FONT> <FONT COLOR="#0060b0"><B>scheduleJobs</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+        ActorSystem actorSystem <FONT COLOR="#303030">=</FONT> Akka<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">system</FONT><FONT COLOR="#303030">();</FONT>
+
+        ActorRef retrieveTopicsActor <FONT COLOR="#303030">=</FONT> actorSystem<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">actorOf</FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#008000"><B>new</B></FONT> Props<FONT COLOR="#303030">(</FONT>RetrieveTagsAndPhotos<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">class</FONT><FONT COLOR="#303030">));</FONT>
+        <FONT COLOR="#808080">// execute every day to get new images</FONT>
+        actorSystem<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">scheduler</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">schedule</FONT><FONT COLOR="#303030">(</FONT>Duration<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">create</FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#0000d0"><B>0</B></FONT><FONT COLOR="#303030">,</FONT> TimeUnit<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">MILLISECONDS</FONT><FONT COLOR="#303030">),</FONT> Duration<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">create</FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#0000d0"><B>1</B></FONT><FONT COLOR="#303030">,</FONT> TimeUnit<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">DAYS</FONT><FONT COLOR="#303030">),</FONT> retrieveTopicsActor<FONT COLOR="#303030">,</FONT> <SPAN STYLE="background: #fff0f0">&quot;select&quot;</SPAN><FONT COLOR="#303030">,</FONT>  Akka<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">system</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">dispatcher</FONT><FONT COLOR="#303030">());</FONT>
+    <FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB">This private method will be called from the <I>onStart
+</I><SPAN STYLE="font-style: normal">method in </SPAN><I>Global</I><SPAN STYLE="font-style: normal">,
+and it will trigger a message to the </SPAN><SPAN STYLE="font-style: normal">defined
+</SPAN><SPAN STYLE="font-style: normal">actor </SPAN><SPAN STYLE="font-style: normal">when
+the application loads for the first time</SPAN><SPAN STYLE="font-style: normal">.
+</SPAN><SPAN STYLE="font-style: normal">After that first execution,</SPAN><SPAN STYLE="font-style: normal">
+it will schedule the </SPAN><SPAN STYLE="font-style: normal">next</SPAN><SPAN STYLE="font-style: normal">
+message </SPAN><SPAN STYLE="font-style: normal">to the actor, to be
+sent</SPAN><SPAN STYLE="font-style: normal"> </SPAN><SPAN STYLE="font-style: normal">after
+</SPAN><SPAN STYLE="font-style: normal">24h in a recurring manner.
+This means that the message will be sent once per day </SPAN><SPAN STYLE="font-style: normal">when</SPAN><SPAN STYLE="font-style: normal">
+our sample application is running.</SPAN></P>
+<P LANG="en-GB">A comment on the current implementation. The
+scheduler as it is implemented runs once per instance, which means
+that if we have several instances running our application we will be
+running the retrieval of data once per instance per day. In this
+sample application this is not an issue, but in some scenarios you
+may want to ensure that the job is done only once. Akka provides
+solutions for this, although they are outside the scope of this
+article. Check Akka documentation for details on <A HREF="http://doc.akka.io/docs/akka/snapshot/contrib/cluster-singleton.html">possible
+solutions</A> to this scenario.</P>
+<H3 LANG="en-GB" CLASS="western">Display Images</H3>
+<P LANG="en-GB">Now that we have the images stored in the database,
+we want to show them. We add a method to our controller in
+<I>Application.java:</I></P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western">1
+2
+3
+4
+5
+6
+7</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> <FONT COLOR="#505050"><B>@Restrict</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#505050"><B>@Group</B></FONT><FONT COLOR="#303030">(</FONT>Application<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">USER_ROLE</FONT><FONT COLOR="#303030">))</FONT>
+ <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>seePhotos</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+        DynamoDbService db <FONT COLOR="#303030">=</FONT> DynamoDbService<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">INSTANCE</FONT><FONT COLOR="#303030">;</FONT>
+        List<FONT COLOR="#303030">&lt;</FONT>Tag<FONT COLOR="#303030">&gt;</FONT> tags <FONT COLOR="#303030">=</FONT> db<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getAllTags</FONT><FONT COLOR="#303030">();</FONT>
+        List<FONT COLOR="#303030">&lt;</FONT>Photo<FONT COLOR="#303030">&gt;</FONT> photos <FONT COLOR="#303030">=</FONT> db<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getPhotosForTag</FONT><FONT COLOR="#303030">(</FONT>tags<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">get</FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#0000d0"><B>0</B></FONT><FONT COLOR="#303030">).</FONT><FONT COLOR="#0000c0">getId</FONT><FONT COLOR="#303030">());</FONT>
+        <FONT COLOR="#008000"><B>return</B></FONT> <FONT COLOR="#0060b0"><B>ok</B></FONT><FONT COLOR="#303030">(</FONT>seePhotos<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">render</FONT><FONT COLOR="#303030">(</FONT>tags<FONT COLOR="#303030">,</FONT> photos<FONT COLOR="#303030">));</FONT>
+ <FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB" STYLE="font-style: normal">As you can see at line 1,
+this method is only accessible for authenticated users. The method
+uses the <I>DynamoDBService</I> to load a list of tags and photos to
+be shown to the user. The template iterates over the arrays and shows
+a list of tags and the photos for the first tag.</P>
+<P LANG="en-GB" STYLE="font-style: normal">In the page  itself we may
+want to see the images of another tag. Instead of loading all the
+images at once, as it would be slow, the template also contains an
+Ajax request that calls another method:</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western">    <FONT COLOR="#505050"><B>@Restrict</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#505050"><B>@Group</B></FONT><FONT COLOR="#303030">(</FONT>Application<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">USER_ROLE</FONT><FONT COLOR="#303030">))</FONT>
+    <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>getImagesForTag</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
+        String tagId <FONT COLOR="#303030">=</FONT> request<FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getQueryString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;tag&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        Logger<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">info</FONT><FONT COLOR="#303030">(</FONT>String<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">format</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Requested images for tag [%s]&quot;</SPAN><FONT COLOR="#303030">,</FONT> tagId<FONT COLOR="#303030">));</FONT>
+        DynamoDbService db <FONT COLOR="#303030">=</FONT> DynamoDbService<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">INSTANCE</FONT><FONT COLOR="#303030">;</FONT>
+        List<FONT COLOR="#303030">&lt;</FONT>Photo<FONT COLOR="#303030">&gt;</FONT> photos <FONT COLOR="#303030">=</FONT> db<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getPhotosForTag</FONT><FONT COLOR="#303030">(</FONT>tagId<FONT COLOR="#303030">);</FONT>
+
+        ObjectNode json <FONT COLOR="#303030">=</FONT> Json<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">newObject</FONT><FONT COLOR="#303030">();</FONT>
+        ArrayNode array <FONT COLOR="#303030">=</FONT> json<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">putArray</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;images&quot;</SPAN><FONT COLOR="#303030">);</FONT>
+        <FONT COLOR="#008000"><B>for</B></FONT><FONT COLOR="#303030">(</FONT>Photo <FONT COLOR="#907000"><B>p:</B></FONT> photos<FONT COLOR="#303030">)</FONT> <FONT COLOR="#303030">{</FONT>
+            ObjectNode node <FONT COLOR="#303030">=</FONT> array<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">addObject</FONT><FONT COLOR="#303030">();</FONT>
+            node<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">put</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;image&quot;</SPAN><FONT COLOR="#303030">,</FONT> p<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getImageUrl</FONT><FONT COLOR="#303030">());</FONT>
+            node<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">put</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;thumbnail&quot;</SPAN><FONT COLOR="#303030">,</FONT> p<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getThumbnailUrl</FONT><FONT COLOR="#303030">());</FONT>
+            node<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">put</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;text&quot;</SPAN><FONT COLOR="#303030">,</FONT> p<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">getText</FONT><FONT COLOR="#303030">());</FONT>
+        <FONT COLOR="#303030">}</FONT>
+        <FONT COLOR="#008000"><B>return</B></FONT> <FONT COLOR="#0060b0"><B>ok</B></FONT><FONT COLOR="#303030">(</FONT>json<FONT COLOR="#303030">);</FONT>
+    <FONT COLOR="#303030">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">This method is also
+secured, as shown at line 1, and receives a tag name in the request
+(line 3). The method loads the images for the tags and returns a Json
+object(lines 8 to 16) with the metadata of the photos. Th</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">
+Json object is processed by the client to display the images
+requested by the user.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Try the Application</H2>
+<P LANG="en-GB">Now that our sample code has been completed, we can
+execute the application is our development environment to see it in
+action. We open a terminal window, move to the folder where we have
+the application and run:</P>
+<P LANG="en-GB">    <I>$play run</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">And we should see
+something like follows:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_6bd83095.jpg" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=383 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">On start, the logs show us
+the application retrieving images from Flickr. You can verify this is
+an asynchronous task by loading the main page while the external data
+is being loaded. Go to <A HREF="http://localhost:9000/">http://localhost:9000</A>
+to see the main page of the application:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_75d37853.jpg" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">As you can see you can
+only try to Sign Up before being able to see any image, thanks to the
+authorization requirements we added when creating the application.
+Press one of the buttons to be redirected to the Sign up page and
+complete the process:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_78f05781.jpg" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+Once authenticated you are able to see the photos page, where you
+have a list fo tags and, once a tag is selected, a list of images
+associated to that tag:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_mdfcc965.jpg" NAME="graphics8" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+</P>
+<H2 CLASS="western">Configuration for Other Environments</H2>
+<P LANG="en-GB">Up to know we have been talking about configuration
+in a development environment. But we  want to deploy this application
+in test or production servers, where the settings will be different:
+changes to the database connection details, OAuth credentials and
+more. 
+</P>
+<P LANG="en-GB">Play Framework uses an <A HREF="http://www.playframework.com/documentation/2.1.1/Configuration">advanced
+configuration system</A>. One of the advantages of this system is
+that you can define configuration values as JVM system properties.
+What is more, these system properties <I>override</I> any settings in
+the <I>conf</I><SPAN STYLE="font-style: normal"> files.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">What this means for
+us is that we can define our development environment in our
+configuration files. Once we want to deploy in another environment,
+we just need to provide the appropriate JVM parameters to Play. For
+example, to override our Amazon AWS access key we can add this system
+property:</SPAN></P>
+<P LANG="en-GB">    <I>-Daws.accesskey=A_New_Key</I></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">This overrides the
+key defined at</SPAN><I> conf/aws/credentials.conf.</I><SPAN STYLE="font-style: normal">
+We can do the same with any other keys we want to replace in the new
+environment. </SPAN>
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">This has an
+additional advantage, as we can define these properties inside an
+environment property in our server, in </SPAN><I>JAVA_HOME</I><SPAN STYLE="font-style: normal">,
+decoupling the source code and the deployment server and reducing the
+chances of leaking keys by mistake.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Next Steps</H2>
+<P LANG="en-GB">At this stage we have a working Play application with
+the expected functionality. But we want to make this application
+available to the general public, and right now we are running it in
+our development machine. No one outside our internal network can see
+it, and that's not what we want.</P>
+<P LANG="en-GB">Fortunately, Amazon AWS provides two solutions to
+this issue. The first one is to deploy the application in an <A HREF="http://aws.amazon.com/ec2/">EC2</A>
+instance. The second is to use <A HREF="http://aws.amazon.com/elasticbeanstalk/">Elastic
+BeanStalk</A> to deploy a war file generated via the <A HREF="https://github.com/dlecan/play2-war-plugin">Play2War</A>
+Play Framework plugin.</P>
+<P LANG="en-GB">The following chapters explain how to deploy the
+application in both Amazon services.</P>
+</BODY>
+</HTML>

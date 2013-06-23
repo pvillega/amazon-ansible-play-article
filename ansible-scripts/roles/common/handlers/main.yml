@@ -1,0 +1,5 @@
+# Handlers are actions executed after the tasks if a notification to a handler is raised
+# In this case, the handler manages a restart of the ssh service
+---
+- name: Restart sshd
+  action: service sshd state=restarted

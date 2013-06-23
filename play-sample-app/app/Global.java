@@ -1,5 +1,10 @@
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+import actors.RetrieveTagsAndPhotos;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import models.SecurityRole;
 
 import com.feth.play.module.pa.PlayAuthenticate;
@@ -11,7 +16,11 @@ import controllers.routes;
 
 import play.Application;
 import play.GlobalSettings;
+import play.libs.Akka;
 import play.mvc.Call;
+
+import scala.concurrent.duration.Duration;
+
 
 public class Global extends GlobalSettings {
 
@@ -68,7 +77,19 @@ public class Global extends GlobalSettings {
 		});
 
 		initialData();
+        scheduleJobs();
 	}
+
+    /*
+    Schedule Actors to retrieve data in the background, asynchronously
+     */
+    private void scheduleJobs() {
+        ActorSystem actorSystem = Akka.system();
+
+        ActorRef retrieveTopicsActor = actorSystem.actorOf(new Props(RetrieveTagsAndPhotos.class));
+        // execute every day to get new images
+        actorSystem.scheduler().schedule(Duration.create(0, TimeUnit.MILLISECONDS), Duration.create(1, TimeUnit.DAYS), retrieveTopicsActor, "select",  Akka.system().dispatcher());
+    }
 
 	private void initialData() {
 		if (SecurityRole.find.findRowCount() == 0) {
