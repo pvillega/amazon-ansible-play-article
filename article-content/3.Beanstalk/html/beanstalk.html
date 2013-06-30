@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 4.0.2.2 (Linux)">
+	<META NAME="AUTHOR" CONTENT="pvillega ">
+	<META NAME="CREATED" CONTENT="20130624;7431700">
+	<META NAME="CHANGEDBY" CONTENT="pvillega ">
+	<META NAME="CHANGED" CONTENT="20130630;19595700">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm }
+		H1.western { font-family: "Arial", sans-serif; font-size: 16pt }
+		H1.cjk { font-family: "DejaVu Sans"; font-size: 16pt }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 16pt }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Arial", sans-serif; font-size: 14pt; font-style: italic }
+		H2.cjk { font-size: 14pt; font-style: italic }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 14pt; font-style: italic }
+		H3 { margin-bottom: 0.21cm }
+		H3.western { font-family: "Arial", sans-serif }
+		H3.ctl { font-family: "Lohit Hindi" }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		A:link { so-language: zxx }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-IE" DIR="LTR">
+<H1 LANG="en-GB" CLASS="western">Deploying in Elastic Beanstalk</H1>
+<P><SPAN LANG="en-GB">A</SPAN><SPAN LANG="en-GB">nother option that
+Amazon AWS provides </SPAN><SPAN LANG="en-GB">to deploy the sample
+application </SPAN><SPAN LANG="en-GB">is <A HREF="http://aws.amazon.com/elasticbeanstalk/">Elastic
+Beanstalk</A>. Beanstalk allows you to deploy a <A HREF="http://en.wikipedia.org/wiki/WAR_file_format_(Sun)">WAR</A>
+file in a <A HREF="http://tomcat.apache.org/">Tomcat</A> </SPAN><SPAN LANG="en-GB">(versions
+6 or 7) </SPAN><SPAN LANG="en-GB">environment. The system 
+automatically manages  load balancing and scalability of the
+application, while giving you full access to all Amazon AWS
+components.</SPAN></P>
+<P><SPAN LANG="en-GB">We have to </SPAN><SPAN LANG="en-GB">give a
+warning</SPAN><SPAN LANG="en-GB"> about the integration between
+Beanstalk and Play Framework. While Beanstalk has many benefits and
+it works fine with </SPAN><SPAN LANG="en-GB">a </SPAN><SPAN LANG="en-GB">Play
+</SPAN><SPAN LANG="en-GB">Framework </SPAN><SPAN LANG="en-GB">application,
+it </SPAN><SPAN LANG="en-GB">is </SPAN><SPAN LANG="en-GB">not the
+optimal platform </SPAN><SPAN LANG="en-GB">to execute Play
+applications</SPAN><SPAN LANG="en-GB">. By default, Play expects to
+be run using its embedded <A HREF="http://netty.io/">Netty</A>
+server. </SPAN><SPAN LANG="en-GB">Using</SPAN><SPAN LANG="en-GB"> a
+WAR file </SPAN><SPAN LANG="en-GB">to run the application inside a
+JEE container </SPAN><SPAN LANG="en-GB">reduces the performance and,
+in some Servlet engines, you lose access to some </SPAN><SPAN LANG="en-GB">of
+the Play </SPAN><SPAN LANG="en-GB">API </SPAN><SPAN LANG="en-GB">that</SPAN><SPAN LANG="en-GB">
+th</SPAN><SPAN LANG="en-GB">e</SPAN><SPAN LANG="en-GB">se engines
+don't support, like Websockets.</SPAN></P>
+<P LANG="en-GB">That said, it is possible to deploy Play in
+Beanstalk, and in some scenarios it is the best option. If you don't
+use certain API and you want Amazon AWS to configure your EC2
+instances and the scalability of your application, please use
+Beanstalk; it works and you can focus on the application, not on
+configuring AWS. But you should be aware of the trade off you are
+making.</P>
+<P LANG="en-GB">The following steps assume that both DynamoDB and RDS
+MySQL are properly set up in Amazon AWS. Check the previous chapter
+for more information on the steps to follow to configure them.</P>
+<H2 LANG="en-GB" CLASS="western">Generating the WAR file</H2>
+<P><SPAN LANG="en-GB">Play Framework doesn't provide a native tool to
+generate WAR files from the </SPAN><SPAN LANG="en-GB">application
+</SPAN><SPAN LANG="en-GB">source. Thankfully, the community has taken
+to the challenge and <A HREF="http://www.dlecan.com/">Damien Lecan</A>
+has created a plugin to that end, <A HREF="https://github.com/dlecan/play2-war-plugin">Play2War</A>.
+This section describes the steps to integrate the plugin with our
+existing code </SPAN><SPAN LANG="en-GB">base</SPAN><SPAN LANG="en-GB">
+and how to generate the WAR file from it</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">Adding Play2War to source</H3>
+<P><SPAN LANG="en-GB"><A HREF="https://github.com/dlecan/play2-war-plugin/wiki/Configuration">Integrating</A>
+Play2War with an existing Play application is very straightforward.
+Play2War </SPAN><SPAN LANG="en-GB">runs</SPAN><SPAN LANG="en-GB"> as
+a SBT plugin, so first of all we need to edit </SPAN><SPAN LANG="en-GB"><I>project/plugins.sbt</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+and add the following line:</SPAN></SPAN></P>
+<P LANG="en-GB">    <I>addSbtPlugin(&quot;com.github.play2war&quot; %
+&quot;play2-war-plugin&quot; % &quot;1.0&quot;)</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">This line allows calling
+Play2War commands via SBT, both by Play and via the terminal.</P>
+<P LANG="en-GB" STYLE="font-style: normal">The second step is to edit
+<I>project/Build.scala </I>and add the Play2War configuration to the
+project, so Play Framework knows how to generate the War file when
+asked to. The resulting configuration looks like the following:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33</PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE CLASS="western"><FONT COLOR="#008800"><B>import</B></FONT> <FONT COLOR="#0e84b5"><B>com.github.play2war.plugin._</B></FONT>
+
+<FONT COLOR="#008800"><B>object</B></FONT> <FONT COLOR="#bb0066"><B>ApplicationBuild</B></FONT> <FONT COLOR="#008800"><B>extends</B></FONT> <FONT COLOR="#bb0066"><B>Build</B></FONT> <FONT COLOR="#333333">{</FONT>
+
+  <FONT COLOR="#008800"><B>val</B></FONT> appName         <FONT COLOR="#008800"><B>=</B></FONT> <SPAN STYLE="background: #fff0f0">&quot;play-sample-app&quot;</SPAN>
+  <FONT COLOR="#008800"><B>val</B></FONT> appVersion      <FONT COLOR="#008800"><B>=</B></FONT> <SPAN STYLE="background: #fff0f0">&quot;1.0-SNAPSHOT&quot;</SPAN>
+
+  <FONT COLOR="#008800"><B>val</B></FONT> appDependencies <FONT COLOR="#008800"><B>=</B></FONT> <FONT COLOR="#bb0066"><B>Seq</B></FONT><FONT COLOR="#333333">(</FONT>
+    javaCore<FONT COLOR="#333333">,</FONT>
+    javaJdbc<FONT COLOR="#333333">,</FONT>
+    javaEbean<FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN> <FONT COLOR="#333333">%%</FONT> <SPAN STYLE="background: #fff0f0">&quot;webjars-play&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.1.0-2&quot;</SPAN><FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;bootstrap&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.3.2&quot;</SPAN><FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;com.amazonaws&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;aws-java-sdk&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;1.4.5&quot;</SPAN><FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;com.feth&quot;</SPAN> <FONT COLOR="#333333">%%</FONT> <SPAN STYLE="background: #fff0f0">&quot;play-authenticate&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;0.2.5-SNAPSHOT&quot;</SPAN><FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;be.objectify&quot;</SPAN>  <FONT COLOR="#333333">%%</FONT>  <SPAN STYLE="background: #fff0f0">&quot;deadbolt-java&quot;</SPAN>     <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;2.1-SNAPSHOT&quot;</SPAN><FONT COLOR="#333333">,</FONT>
+    <SPAN STYLE="background: #fff0f0">&quot;mysql&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;mysql-connector-java&quot;</SPAN> <FONT COLOR="#333333">%</FONT> <SPAN STYLE="background: #fff0f0">&quot;5.1.25&quot;</SPAN>
+  <FONT COLOR="#333333">)</FONT>
+
+  <FONT COLOR="#008800"><B>val</B></FONT> main <FONT COLOR="#008800"><B>=</B></FONT> play<FONT COLOR="#333333">.</FONT><FONT COLOR="#bb0066"><B>Project</B></FONT><FONT COLOR="#333333">(</FONT>appName<FONT COLOR="#333333">,</FONT> appVersion<FONT COLOR="#333333">,</FONT> appDependencies<FONT COLOR="#333333">)</FONT>
+    <FONT COLOR="#333333">.</FONT>settings<FONT COLOR="#333333">(</FONT><FONT COLOR="#bb0066"><B>Play2WarPlugin</B></FONT><FONT COLOR="#333333">.</FONT>play2WarSettings<FONT COLOR="#008800"><B>:</B></FONT> <FONT COLOR="#008800"><B>_</B></FONT><FONT COLOR="#333399"><B>*</B></FONT><FONT COLOR="#333333">)</FONT>
+    <FONT COLOR="#333333">.</FONT>settings<FONT COLOR="#333333">(</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Objectify Play Repository (release)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://schaloner.github.com/releases/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;Objectify Play Repository (snapshot)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://schaloner.github.com/snapshots/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-easymail (release)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-easymail/repo/releases/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-easymail (snapshot)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-easymail/repo/snapshots/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-authenticate (release)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-authenticate/repo/releases/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+    resolvers <FONT COLOR="#333333">+=</FONT> <FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;play-authenticate (snapshot)&quot;</SPAN><FONT COLOR="#333333">,</FONT> url<FONT COLOR="#333333">(</FONT><SPAN STYLE="background: #fff0f0">&quot;http://joscha.github.com/play-authenticate/repo/snapshots/&quot;</SPAN><FONT COLOR="#333333">))(</FONT><FONT COLOR="#bb0066"><B>Resolver</B></FONT><FONT COLOR="#333333">.</FONT>ivyStylePatterns<FONT COLOR="#333333">),</FONT>
+
+    <FONT COLOR="#bb0066"><B>Play2WarKeys</B></FONT><FONT COLOR="#333333">.</FONT>servletVersion <FONT COLOR="#333333">:=</FONT> <SPAN STYLE="background: #fff0f0">&quot;3.0&quot;</SPAN>
+  <FONT COLOR="#333333">)</FONT>
+
+<FONT COLOR="#333333">}</FONT></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">As you can see in line 1,
+we are importing the Play2War plugin which we integrate with our
+project in line 21. Line 30 sets the <I>Servlet</I> environment for
+which we are creating the War file. In this case we target <I>Servlets
+3.0,</I> which has substantial improvements over <I>Servlets 2.5</I>.
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">Play2War provides some
+other <A HREF="https://github.com/dlecan/play2-war-plugin/wiki/Configuration">configuration</A>
+options that are not covered in this guide. Please check them to
+ensure full compatibility with the JEE container of your choice.</P>
+<H3 LANG="en-GB" CLASS="western">Configuration</H3>
+<P LANG="en-GB">One concern when creating a War file from the sample
+application is how to manage critical configuration values. This
+includes passwords and secret keys used to connect to SaaS services,
+which we don't want to commit to source control.</P>
+<P LANG="en-GB">Fortunately, the default way that Play uses to manage
+these keys is still valid when creating a War file. As it was
+mentioned in the first chapter, any configuration property provided
+as JVM option via the <I>-D</I><SPAN STYLE="font-style: normal"> flag
+overrides the </SPAN><SPAN STYLE="font-style: normal">corresponding
+entries</SPAN><SPAN STYLE="font-style: normal"> in </SPAN><I>application.conf</I><SPAN STYLE="font-style: normal">.
+</SPAN>
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">This means that </SPAN><SPAN STYLE="font-style: normal">we
+can store critical information in th</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">
+</SPAN><SPAN STYLE="font-style: normal">JVM options </SPAN><SPAN STYLE="font-style: normal">string,
+</SPAN><SPAN STYLE="font-style: normal">instead of adding it to </SPAN><I>conf</I><SPAN STYLE="font-style: normal">
+files where it could be committed to source control by mistake.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">As it is explained
+later on, Beanstalk supports this and provides a simple way to add
+JVM options to </SPAN><SPAN STYLE="font-style: normal">a Java</SPAN><SPAN STYLE="font-style: normal">
+container.</SPAN></P>
+<H3 LANG="en-GB" CLASS="western">Generating the WAR</H3>
+<P><SPAN LANG="en-GB">To generate the War file, open a terminal
+window and go to the root folder of the sample application. In there,
+execute:</SPAN></P>
+<P>    <I><SPAN LANG="en-GB">$play war</SPAN></I></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">to execute the
+SBT plugin that builds the War file. The resulting War is stored at
+the </SPAN></SPAN><I><SPAN LANG="en-GB">target</SPAN></I><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+folder that is created at the root of the application. In this
+example </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">the
+file is at</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">:</SPAN></SPAN></P>
+<P>    <I><SPAN LANG="en-GB">$target/play-sample-app-1.0-SNAPSHOT.war
+</SPAN></I>
+</P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The output of
+executing Play2War is:</SPAN></SPAN></P>
+<P><IMG SRC="beanstalk_html_m179464b7.jpg" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=237 BORDER=0><BR><BR clear="left">
+</P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">As you can
+see, the Play2War plugin generates a set of jars from the source code
+of the application and stores them inside the War file. All the
+configuration required to run the file inside a container is added as
+per the Servlet version we selected in </SPAN></SPAN><I><SPAN LANG="en-GB">Build.scala</SPAN></I><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">At this stage
+we have created a fully functional War file, ready to be deployed in
+Beanstalk.</SPAN></SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Creating the Beanstalk instance</H2>
+<P LANG="en-GB">As we want to deploy the War file in Elastic
+Beanstalk, first we have to create an instance via the <A HREF="https://console.aws.amazon.com/elasticbeanstalk/home?region=eu-west-1#">Elastic
+Beanstalk Console</A>. An instance consists on a servlet container in
+which we deploy the War file. As mentioned before, Amazon manages
+many aspects of the container, simplifying the maintenance of the
+application.</P>
+<P LANG="en-GB">When accessing the console, the first screen allows
+us to select a container for the application:</P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_3cf79c32.jpg" NAME="graphics2" ALIGN=LEFT WIDTH=643 HEIGHT=379 BORDER=0><BR><BR clear="left">We
+select <I>Tomcat 7</I> as our target container and press <I>Start</I><SPAN STYLE="font-style: normal">.
+Beanstalk starts creating the environment, which may take several
+minutes to be ready. </SPAN>
+</P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_m72fb2f2f.jpg" NAME="graphics4" ALIGN=LEFT WIDTH=643 HEIGHT=327 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">As you can see in
+the </SPAN><I>Events</I><SPAN STYLE="font-style: normal"> view,
+Beanstalk is creating all the necessary components for the
+application, including </SPAN><I>auto-scaling</I><SPAN STYLE="font-style: normal">
+and </SPAN><I>Cloud</I><I>W</I><I>atch Alarms</I><SPAN STYLE="font-style: normal">,
+so you don't have to worry about managing them:</SPAN></P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_38141b03.jpg" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=405 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">Once the initial
+deployment is ready, we can start configuring our application.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">In the Overview tab,
+the </SPAN><I>Edit Configuration</I><SPAN STYLE="font-style: normal">
+link gives access to several settings for the application. </SPAN><SPAN STYLE="font-style: normal">These</SPAN><SPAN STYLE="font-style: normal">
+includ</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">
+the </SPAN><I>Container Settings</I><SPAN STYLE="font-style: normal">
+area, where we can modify the heap of the application and, more
+importantly, provide JVM options:</SPAN></P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_m38789af8.jpg" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=519 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">We can use the JVM
+options to provide configuration settings to the application, like
+the JDBC url to our RDS instance. Remember that in a Play
+application, options provided via </SPAN><I>-D</I><SPAN STYLE="font-style: normal">
+flags in JVM  override settings in </SPAN><I>application.conf</I><SPAN STYLE="font-style: normal">.
+For example, we can provide the following string:</SPAN></P>
+<P LANG="en-GB">    <I>-Ddb.default.url=&quot;&lt;jdbc url&gt;&quot;
+-Ddb.default.user=user -Ddb.default.password=password</I></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">t</SPAN><SPAN STYLE="font-style: normal">o
+tell the application to use the RDS instance created in the previous
+chapter.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">After applying the
+changes, the application will restart and we are ready to deploy the
+War file </SPAN><SPAN STYLE="font-style: normal">in Tomcat</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Deploying to Beanstalk</H2>
+<P LANG="en-GB">Deploying to Beanstalk is a simple process. Beanstalk
+uses the concept of <I>Versions </I><SPAN STYLE="font-style: normal">to
+manage the application. Each new version is a new War file uploaded
+to the server. When deploying, we can add  comments to facilitate
+tracking of changes to the application. </SPAN><SPAN STYLE="font-style: normal">At
+any moment we can download the War file associated to a version, to
+do local testing, and we can revert to previous versions if needed.</SPAN></P>
+<P LANG="en-GB">When we created the Beanstalk environment, we
+selected Tomcat 7 as the container. To facilitate deployment to
+Tomcat 7, first you need to rename the War generated by Play2War to
+<I>ROOT.war</I><SPAN STYLE="font-style: normal">. This will turn our
+sample application into the </SPAN><I>root</I><SPAN STYLE="font-style: normal">
+application of the container.</SPAN></P>
+<P LANG="en-GB">Once ready, select <I>Upload new version</I><SPAN STYLE="font-style: normal">
+in the Elastic Beanstalk dashboard. It opens a pop up window </SPAN><SPAN STYLE="font-style: normal">where
+all</SPAN><SPAN STYLE="font-style: normal"> the details of the
+version </SPAN><SPAN STYLE="font-style: normal">can be added, before
+</SPAN><SPAN STYLE="font-style: normal">deploy</SPAN><SPAN STYLE="font-style: normal">ment</SPAN><SPAN STYLE="font-style: normal">:</SPAN></P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_m284f9e40.jpg" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=529 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">After pressing
+</SPAN><I>Upload and Deploy</I><SPAN STYLE="font-style: normal"> the
+War file is uploaded and the server is restarted to deploy the new
+release. This process takes a few minutes, as the War file being
+uploaded can be around 60Mb and the server needs to </SPAN><SPAN STYLE="font-style: normal">deploy
+the War and </SPAN><SPAN STYLE="font-style: normal">restart after the
+upload finishes.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">If everything works
+as expected, a new version of the application </SPAN><SPAN STYLE="font-style: normal">is
+shown in the dashboard. Otherwise, check the logs to find </SPAN><SPAN STYLE="font-style: normal">the
+reason </SPAN><SPAN STYLE="font-style: normal">why the application is
+not deploying </SPAN><SPAN STYLE="font-style: normal">properly</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">A common error when
+deploying to Beanstalk is to have a mismatch between JDK versions in
+the development environment and the container. Beanstalk uses JDK
+1.6. If you create your War file using a newer version, like JDK 1.7,
+application deployment fails due to class version issues. Be aware of
+this limitation when generating the War file.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western">Testing the application</H2>
+<P><SPAN LANG="en-GB">At this stage we have the application deployed
+and running. If we access the url provided by Beanstalk, </SPAN><SPAN LANG="en-GB">which
+in this example is
+<A HREF="http://default-environment-5kb8hjacsg.elasticbeanstalk.com/">http://default-environment-5kb8hjacsg.elasticbeanstalk.com/</A>,
+we can see the </SPAN><SPAN LANG="en-GB">homepage</SPAN><SPAN LANG="en-GB">:
+</SPAN>
+</P>
+<P><BR><BR>
+</P>
+<P><IMG SRC="beanstalk_html_m1616ca6c.jpg" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=252 BORDER=0><BR><BR clear="left"><SPAN LANG="en-GB">Beanstalk
+has full access to all AWS services. </SPAN><SPAN LANG="en-GB">This
+means that you can extend your application as  required, usually with
+minimal effort as AWS provides convenient interfaces between
+Beanstalk and other AWS components.</SPAN></P>
+<P><SPAN LANG="en-GB">For example, to modify the </SPAN><SPAN LANG="en-GB">generated
+</SPAN><SPAN LANG="en-GB">domain linked to your application </SPAN><SPAN LANG="en-GB">(which
+is not very user friendly) </SPAN><SPAN LANG="en-GB">and use your own
+custom domain you can follow the steps described in the
+<A HREF="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customdomains.html">documentation</A>,
+which </SPAN><SPAN LANG="en-GB">use</SPAN><SPAN LANG="en-GB"> <A HREF="http://aws.amazon.com/route53/">Amazon
+Route 53</A> </SPAN><SPAN LANG="en-GB">to provide this mapping.</SPAN><SPAN LANG="en-GB">
+</SPAN>
+</P>
+<H2 CLASS="western"><SPAN LANG="en-GB">Next steps</SPAN></H2>
+<P LANG="en-GB">This concludes the article about deploying a Play
+Framework application in Amazon AWS. Through it we have seen how to
+create a Play Framework application that uses Amazon AWS services,
+how to deploy it in EC2 using Ansible and how to run a War version of
+this application in Elastic Beanstalk.</P>
+<P LANG="en-GB">The application is a good starting point from which
+to build your own application. Feel free to clone and fork the <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github
+project</A> and develop your own. You will see that by using these
+three tools (Amazon AWS, Ansible and Play Framework) your
+productivity increases and you are able to create amazing websites
+with minimal effort.</P>
+<P LANG="en-GB">If you have any questions, feel free to contact me at
+<A HREF="https://twitter.com/pvillega">@pvillega</A>.</P>
+<P LANG="en-GB">Cheers!</P>
+</BODY>
+</HTML>
