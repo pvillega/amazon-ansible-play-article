@@ -5,4 +5,4 @@
 
 # host-specific-setting: value
 ---
-
+machineVar: value

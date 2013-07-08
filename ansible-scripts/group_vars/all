@@ -19,11 +19,12 @@ pvm_path: ${home}/pvm/install/$play_version
 repo_pvm_url: git://github.com/kaiinkinen/pvm.git
 repo_pvm_remote: origin
 repo_pvm_version: master
-repo_url: git://github.com/pvillega/personal-page.git 
+repo_url: https://github.com/pvillega/amazon-ansible-play-article.git
 repo_remote: origin
 repo_version: master
 dest: ${home}/projectClone
-project_version: 1.2
-project: personal-page-$project_version
+dest_app: $dest/play-sample-app
+project_version: 1.0-SNAPSHOT
+project: play-sample-app-$project_version
 
 

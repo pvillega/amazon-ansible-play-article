@@ -47,12 +47,13 @@
 - name: Remove old checkouts (just in case they are still in there)
   action: file path=${dest} state=absent
 
-- name: Checkout project from Git
+- name: Checkout project from Git, polling every 10s (Default) for a max of 15m (60s * 15m = 900s)
   action: git repo=$repo_url dest=$dest remote=$repo_remote version=$repo_version
+  async: 900
 
 # Create distribution async, polling every 10s (Default) for a max of 15m (60s * 15m = 900s)
-- name: Create Dist deployment
-  action: shell cd ${dest} && ${pvm_path}/play dist 
+- name: Create Dist deployment, polling every 10s (Default) for a max of 15m (60s * 15m = 900s)
+  action: shell cd ${dest_app} && ${pvm_path}/play dist 
   async: 900
 
 # We ignore errors as there may be no running Java process	
@@ -67,7 +68,7 @@
   action: file path=${home}/$project.zip state=absent
 
 - name: Copy zip to home folder
-  action: command cp ${dest}/dist/$project.zip ${home}/
+  action: command cp ${dest_app}/dist/$project.zip ${home}/
 
 - name: Unpack project
   action: command unzip $project.zip chdir=${home} 
@@ -77,6 +78,10 @@
 
 - name: Remove old checkouts (let's clean the house a bit)
   action: file path=${dest} state=absent
+
+
+- name: copy start script with all config to place
+  copy: src=start dest=${home}/$project/start mode=0755
 
 # Launch project (asynchronously with fire-and-forget behaviour)
 - name: Launch project

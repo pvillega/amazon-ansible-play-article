@@ -1,8 +1,8 @@
 # Defines the Playbook to set up the db servers 
 # This playbook targets any host defined as database
-- hosts: databases
-
 # The roles contains a set of scripts to be run that this Playbook will load, in order
+- name: perform databases setup
+  hosts: databases
   roles:
     - common
     - dbtier

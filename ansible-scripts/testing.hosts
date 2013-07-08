@@ -2,19 +2,19 @@
 
 # Webservers in Ireland region
 [ireland-webservers]
-ec2-72-44-33-67.compute-1.amazonaws.com
+ec2-54-216-124-229.eu-west-1.compute.amazonaws.com
 
 # Databases in Ireland region
 [ireland-databases]
-ec2-72-44-33-67.compute-1.amazonaws.com
+
 
 # Webservers in East Coast region
 [eastcoast-webservers]
-ec2-72-44-33-67.compute-1.amazonaws.com
+
 
 # Databases in East Coast region
 [eastcoast-databases]
-ec2-72-44-33-67.compute-1.amazonaws.com
+
 
 # All webservers in all regions
 [webservers:children]

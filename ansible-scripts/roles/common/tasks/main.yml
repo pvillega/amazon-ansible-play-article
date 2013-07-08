@@ -35,10 +35,10 @@
   action: apt pkg=unattended-upgrades state=present
 
 - name: Adjust APT update intervals
-  action: copy src=config/apt_periodic dest=/etc/apt/apt.conf.d/10periodic
+  copy: src=apt_periodic dest=/etc/apt/apt.conf.d/10periodic
 
 - name: Copy debconf selections so that Postfix can configure itself non-interactively
-  copy: src=config/postfix_selections  dest=/tmp/postfix_selections
+  copy: src=postfix_selections  dest=/tmp/postfix_selections
 
 - name: Set up Postfix to relay mail
   action: command debconf-set-selections /tmp/postfix_selections
@@ -48,17 +48,6 @@
 
 - name: Make logwatch mail $logwatch_email daily
   action: lineinfile dest=/etc/cron.daily/00logwatch regexp="^/usr/sbin/logwatch" line="/usr/sbin/logwatch --output mail --mailto $logwatch_email --detail high" state=present 
-
-# Set firewall
-- name: Firewall allow ssh (ufw enable has to be run manually)
-  action: command ufw allow ssh
-- name: Firewall allow http (ufw enable has to be run manually)
-  action: command ufw allow http
-- name: Firewall allow https (ufw enable has to be run manually)
-  action: command ufw allow https
-
-- name: Enable ufw 
-  action: command ufw enable 
 
 - name: Prevent IP spoofing
   action: lineinfile dest=/etc/host.conf regexp="^order" line="order bind,hosts" state=present  
@@ -79,6 +68,8 @@
   action: command ip6tables -A FORWARD -j LOG
 - name: Configure PSAD (update signatures)
   action: command psad --sig-update
+  async: 10
+  ignore_errors: yes
 
 - name: SELinux 
   action: apt pkg=apparmor state=present  
@@ -91,7 +82,6 @@
 - name: Secure shm 
   action: lineinfile dest=/etc/fstab  regexp="^tmpfs" line="tmpfs     /dev/shm     tmpfs     defaults,noexec,nosuid     0     0" state=present
 
-- name: Reboot instance
-  action: command reboot
+
 
 

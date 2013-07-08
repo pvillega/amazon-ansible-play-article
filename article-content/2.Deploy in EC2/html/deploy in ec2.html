@@ -1,0 +1,973 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 4.0.2.2 (Linux)">
+	<META NAME="AUTHOR" CONTENT="pvillega ">
+	<META NAME="CREATED" CONTENT="20130626;8220200">
+	<META NAME="CHANGEDBY" CONTENT="pvillega ">
+	<META NAME="CHANGED" CONTENT="20130708;23015100">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm }
+		H1.western { font-family: "Arial", sans-serif; font-size: 16pt }
+		H1.cjk { font-family: "DejaVu Sans"; font-size: 16pt }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 16pt }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Arial", sans-serif; font-size: 14pt; font-style: italic }
+		H2.cjk { font-size: 14pt; font-style: italic }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 14pt; font-style: italic }
+		H3 { margin-bottom: 0.21cm }
+		H3.western { font-family: "Arial", sans-serif }
+		H3.ctl { font-family: "Lohit Hindi" }
+		H4 { margin-bottom: 0.21cm }
+		H4.western { font-family: "Arial", sans-serif; font-size: 11pt; font-style: italic }
+		H4.cjk { font-size: 11pt; font-style: italic }
+		H4.ctl { font-family: "Lohit Hindi"; font-size: 11pt; font-style: italic }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		A:link { so-language: zxx }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-IE" DIR="LTR">
+<H1 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Deploy
+in EC2</FONT></H1>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">This
+chapter </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">explains</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+how to use </SPAN></FONT><A HREF="http://www.ansibleworks.com/"><SPAN LANG="en-GB">Ansible</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+to deploy the sample application </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">we
+just </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">created
+in</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">to</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+Amazon EC2. The steps describe both how to deploy the application and
+how to configure the AWS components </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">required
+to</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+run the application, like </SPAN></FONT><A HREF="http://aws.amazon.com/rds/"><SPAN LANG="en-GB">RDS</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+or </SPAN></FONT><A HREF="http://aws.amazon.com/dynamodb/"><SPAN LANG="en-GB">DynamoDB</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">,
+. </SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The following
+sections show how to deploy a single instance to create a test
+environment. The same steps can be applied to create other deployment
+sets, like a development or a production environment, backed by
+Amazon AWS services. </FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The scripts are
+available in <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>.
+They can be downloaded and modified as required to help you deploy
+the sample application in EC2.</FONT></P>
+<H2 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Using
+Ansible for deployment</FONT></H2>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Ansible is
+a tool </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">for
+</SPAN></FONT><A HREF="http://en.wikipedia.org/wiki/DevOps"><SPAN LANG="en-GB">DevOps</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+that allows you </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">to
+remotely execute commands in your servers. </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">It
+provides a modular system in which you can define individual tasks to
+run according to the server role. Ansible complements the scripts
+with a thorough API that helps with common operations and a set of
+plugins for popular components (Amazon AWS, PostgreSQL, etc.). As a
+note, the</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+</SPAN></FONT><A HREF="http://www.ansibleworks.com/docs/amazon_web_services.html"><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Amazon
+API</SPAN></FONT></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+that </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Ansible
+provides, which </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">you
+can use to interact with AWS </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">components,
+</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">is
+not used in this </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">article</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">.</SPAN></FONT></P>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Ansible has
+minimal requirements; the only piece of software necessary on your
+machine to launch Ansible is Python 2.6 (or greater) and a few Python
+modules. This facilitates its deployment  in any development or
+system administration computer. </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Th</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">e
+connection with the servers is established via</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+</SPAN></FONT><A HREF="http://en.wikipedia.org/wiki/Secure_Shell"><SPAN LANG="en-GB">SSH</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">,
+a common protocol included by default on all Linux machines.</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">.
+</SPAN></FONT>
+</P>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Ansible</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+uses a series of scripts to define the instructions to run on a given
+server. The scripts are called Playbooks and they follow the </SPAN></FONT><A HREF="http://en.wikipedia.org/wiki/YAML"><SPAN LANG="en-GB">YAML</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+format. </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Ansible
+allows you to execute </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">the
+</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">scripts
+on several </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">servers
+</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">at
+once, in parallel. This means that, </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">in
+Ansible, you execute a Playbook </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">once
+and all your </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">servers</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+will </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">process</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+that set of commands, </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">receiving
+the same configuration</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">.
+</SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The aim of the
+Ansible scripts in this article is to create a custom AMI that can be
+used by Amazon AWS to enable auto-scaling of our application. This
+means that the scripts are run against one instance only, but they
+can be easily modified to run </FONT><FONT FACE="Times New Roman, serif">targeting</FONT><FONT FACE="Times New Roman, serif">
+many instances.</FONT></P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Structure
+of </FONT><FONT FACE="Times New Roman, serif">Ansible </FONT><FONT FACE="Times New Roman, serif">F</FONT><FONT FACE="Times New Roman, serif">older</FONT></H3>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>
+repository contains the Ansible scripts we use to deploy the sample
+application. If you explore the folder you may notice that there is a
+certain structure in it. The folders and files are organized
+following <A HREF="http://www.ansibleworks.com/docs/bestpractices.html">Best
+Practices</A> for Ansible. </FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Using best
+practices is not just a recommendation but almost a mandatory
+requirement. Many Ansible commands (on version 1.2 and onwards)
+assume some files will be located in the locations recommended by the
+best practices by default. Following these recommendations will save
+you time when trying to use these commands, and will keep the
+Playbooks nicely organized.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">If you open the
+folder with the scripts, you will notice the following contents:</FONT></P>
+<UL>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>groups_vars</B><SPAN STYLE="font-weight: normal">
+	(folder): contains configuration specific to some server groups</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>host_vars
+	</B><SPAN STYLE="font-weight: normal">(folder): contains
+	configuration specific to a particular host</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>roles</B><SPAN STYLE="font-weight: normal">
+	(folder): contains the role Playbooks, modules with reusable
+	functionality</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>dbservers.yml:
+	</B><SPAN STYLE="font-weight: normal">defines the roles to execute
+	when dealing with database servers</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>developments.hosts:
+	</B><SPAN STYLE="font-weight: normal">contains a list of hosts and
+	groups of hosts that belong to a </SPAN><SPAN STYLE="font-weight: normal">development
+	environment</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>production.hosts:
+	</B><SPAN STYLE="font-weight: normal">contains a list of hosts and
+	groups of hosts that belong to a production environment</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>Readme.md:
+	</B><SPAN STYLE="font-weight: normal">some notes on the contents of
+	the folder</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>site.yml:</B><SPAN STYLE="font-weight: normal">
+	defines the roles to execute when deploying our application</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>testing.hosts:
+	</B><SPAN STYLE="font-weight: normal">contains a list of hosts and
+	groups of hosts that belong to a testing environment</SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><B>webservers.yml:</B><SPAN STYLE="font-weight: normal">
+	defines the roles to execute when dealing with web servers</SPAN></FONT></P>
+</UL>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-weight: normal">From
+this set of files and folders, there are some that demand a more
+detailed explanation. For example, there</SPAN> are three
+configuration files which contain IP address of servers
+(<I>development.hosts</I>, <I>testing.hosts</I> and
+<I>production.hosts</I>). If you edit one, you will see something
+like:</FONT></P>
+<TABLE WIDTH=635 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=12>
+	<COL WIDTH=615>
+	<TR>
+		<TD WIDTH=12 STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western">1
+<SPAN LANG="en-GB">2</SPAN>
+<SPAN LANG="en-GB">3</SPAN>
+<SPAN LANG="en-GB">4</SPAN>
+<SPAN LANG="en-GB">5</SPAN></PRE>
+		</TD>
+		<TD WIDTH=615 STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western"><FONT COLOR="#888888"># Contains the addresses of all EC2 instances used in testing in each region</FONT>
+
+<FONT COLOR="#888888"><SPAN LANG="en-GB"># Webservers in Ireland region</SPAN></FONT>
+<SPAN LANG="en-GB">[<FONT COLOR="#996633">ireland-webservers</FONT>]</SPAN>
+<SPAN LANG="en-GB">ec2-54-216-124-229.eu-west-1.compute.amazonaws.com</SPAN></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Line 4 defines a
+group. A group contains a list of IP that map to existing hosts (in
+line 5, an EC2 instance) or other groups. </FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The purpose of
+these files is to define the servers on which Ansible executes the
+Playbooks. By defining some groups, we can refer to a set of servers
+via the group name in the Playbooks, ensuring that we run the proper
+commands in each host. Groups also allow us to expand or reduce the
+number of servers managed by Ansible by adding or removing IP from
+the list.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">By having three
+files with the same group names in them (but different IP in the
+groups), we are defining different execution environments that can
+benefit from the same scripts. When running Ansible we can select
+which environment we want to target. </FONT>
+</P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">In the root
+folder there are three main Playbooks available. Each one can be
+executed to set up either all our system (<I>site.yml</I>) or a
+specific subset of machines (<I>webservers.</I><I>yml</I> or
+<I>db</I><I>servers.yml</I>). The <I>site.yml </I><SPAN STYLE="font-style: normal">Playbook
+contains just references to the other two Playbooks. In turn, these
+Playbooks contain a list of </SPAN><I>roles </I><SPAN STYLE="font-style: normal">to
+run, in order </SPAN><SPAN STYLE="font-style: normal">of execution</SPAN><SPAN STYLE="font-style: normal">.
+The </SPAN><I>roles</I><SPAN STYLE="font-style: normal"> are the ones
+doing the real work, while the</SPAN><SPAN STYLE="font-style: normal">se
+main Playbooks </SPAN><SPAN STYLE="font-style: normal">just list
+which ones we trigger for each environment. This division makes it
+very easy to change the commands </SPAN><SPAN STYLE="font-style: normal">being</SPAN><SPAN STYLE="font-style: normal">
+execute</SPAN><SPAN STYLE="font-style: normal">d on each host</SPAN><SPAN STYLE="font-style: normal">.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">In this example,
+the database Playbook is provided for completeness purposes. We use
+Amazon RDS, which makes this script unnecessary as we don't manage
+the database servers. But if you decide to deploy your own servers
+with your own database versions, you can use the Playbook to trigger
+the proper configuration steps. </FONT>
+</P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">In the folder's
+list you may notice two folders that contain specific configuration
+for the Playbooks, depending on the group or host we are targeting
+during execution. The <I>group_vars </I><SPAN STYLE="font-style: normal">folder
+has a list of files name</SPAN><SPAN STYLE="font-style: normal">d</SPAN><SPAN STYLE="font-style: normal">
+as the groups define</SPAN><SPAN STYLE="font-style: normal">d</SPAN><SPAN STYLE="font-style: normal">
+in the hosts files (</SPAN><I>webservers, databases,
+ireland-weberserv</I><I>er</I><I>s</I><SPAN STYLE="font-style: normal">)
+and a file named </SPAN><I>all</I><SPAN STYLE="font-style: normal">.
+</SPAN><SPAN STYLE="font-style: normal">Files that correspond to a
+group name apply only to servers in that group while </SPAN><I>all
+</I><SPAN STYLE="font-style: normal">applies to all the servers
+receiving Ansible commands.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Each
+file contains a list of pairs (key: value) which define variables and
+values. </SPAN><SPAN STYLE="font-style: normal">These variables are
+then used in the Playbooks, replacing each key by its corresponding
+value. </SPAN><SPAN STYLE="font-style: normal">This allows us, for
+example, to define the version of Play Framework </SPAN><SPAN STYLE="font-style: normal">we
+want to install </SPAN><SPAN STYLE="font-style: normal">in each group</SPAN><SPAN STYLE="font-style: normal">
+and to change it later on by editing only one location.</SPAN></FONT></P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Finally, the
+<I>roles</I> folder contains the different '<I>roles</I>'. A role is
+a set of Playbooks, templates and other files that do a specific task
+in a server. For example, the '<I>common</I>' role has a list of
+commands to secure a Linux server, installing packages like <I>SELinux</I>.
+This division on roles facilitates reusing tasks across servers, and
+we can enable or disable specific tasks for a given group at any
+moment with minimal effort.</FONT></P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Ansible
+Scripts</FONT></H3>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">A full
+description of an Ansible script is outside the scope of this
+document, please refer to the <A HREF="http://www.ansibleworks.com/docs/playbooks.html">documentation</A>
+for this. This section provides a quick overview of the basics of a
+script.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">An Ansible script
+is a <A HREF="http://en.wikipedia.org/wiki/YAML">YAML</A> file, which
+is plain text and human readable, that contains a set of commands to
+execute in the target servers. An example:</FONT></P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western"> 1
+ <SPAN LANG="en-GB">2</SPAN>
+ <SPAN LANG="en-GB">3</SPAN>
+ <SPAN LANG="en-GB">4</SPAN>
+ <SPAN LANG="en-GB">5</SPAN>
+ <SPAN LANG="en-GB">6</SPAN>
+ <SPAN LANG="en-GB">7</SPAN>
+ <SPAN LANG="en-GB">8</SPAN>
+ <SPAN LANG="en-GB">9</SPAN>
+<SPAN LANG="en-GB">10</SPAN>
+<SPAN LANG="en-GB">11</SPAN></PRE>
+		</TD>
+		<TD STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western"><FONT COLOR="#888888"># Secures an Ubuntu instance. </FONT>
+<FONT COLOR="#888888"><SPAN LANG="en-GB">#</SPAN></FONT>
+<FONT COLOR="#0e84b5"><SPAN LANG="en-GB"><B>---</B></SPAN></FONT>
+<SPAN LANG="en-GB">- name: Update APT package cache</SPAN>
+  <SPAN LANG="en-GB">action: apt update_cache=yes</SPAN>
+
+<SPAN LANG="en-GB">- name: Run apt-get upgrade</SPAN>
+  <SPAN LANG="en-GB">action: apt upgrade=yes</SPAN>
+
+<SPAN LANG="en-GB">- name: Install fail2ban</SPAN>
+  <SPAN LANG="en-GB">action: apt pkg=fail2ban state=installed</SPAN></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">In the sample
+above line 3 indicates the start of the script. As you can see, we
+have three actions defined by a <I>name</I><SPAN STYLE="font-style: normal">
+and the </SPAN><I>action </I><SPAN STYLE="font-style: normal">itself</SPAN><I>.</I><SPAN STYLE="font-style: normal">
+The </SPAN><I>name</I><SPAN STYLE="font-style: normal"> is displayed
+during the execution of the Playbook, allowing us to know which step
+is being run. The </SPAN><I>action</I><SPAN STYLE="font-style: normal">
+corresponds to either an Ansible command, using the modules and API
+provided by the tool, or a raw command executed via </SPAN><I>SSH</I><SPAN STYLE="font-style: normal">.
+</SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The steps are run
+in order. If none of them fail, the script finishes with a status of
+success. If a step fails and we have not opted to ignore errors in
+that particular step, then the script will abort and we will be
+notified of the error. Having errors in one server may not mean that
+the execution will stop in other servers.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">When writing
+Playbooks, be aware that Ansible is not atomic. That is, if the
+execution of the Playbook fails in a server Ansible doesn't rollback
+any step that has been executed in that server. This means that it is
+recommended to add steps that can be run multiple times or with
+proper safeguards. The script may fail in the middle of execution and
+you may need to execute it again on the same server, which results in
+some steps being run twice. </FONT>
+</P>
+<H2 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Amazon
+AWS components</FONT></H2>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">This
+section shows how to configure the different Amazon AWS components we
+need for the application. We </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">explain</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+how to do </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">this</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+through the UI provided by the </SPAN></FONT><A HREF="https://console.aws.amazon.com/console/home"><SPAN LANG="en-GB">Amazon
+Console</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">.
+</SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">All the steps
+assume you have an AWS account, you have access to the Console and
+you are allowed to create components with your account. Management of
+account security and roles is out of scope for this article and
+therefore it is not explained. </FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Be sure to 
+select the region where you want to deploy your components before
+proceeding, as to avoid issues caused by having components deployed
+across different regions.</FONT></P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Configure
+DynamoDB</FONT></H3>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">As mentioned in
+the previous chapter, we use DynamoDB to store metadata of images and
+tags retrieved from Flickr. DynamoDB is very useful for this purpose,
+as metadata is something that may change as the application grows. In
+DynamoDB we can define a set of tables with no fixed schema and add
+more “columns” as needed, without having to change any settings
+in the table.</FONT></P>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Using the
+</SPAN></FONT><A HREF="https://console.aws.amazon.com/dynamodb/home?region=eu-west-1#"><SPAN LANG="en-GB">DynamoDB
+console</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+we can define the tables that the sample application uses. To create
+a table, press the </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB"><I>Create
+Table</I></SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+button at the top:</SPAN></SPAN></FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_6bbe7dfb.png" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=116 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">This
+opens a popup to create a table. In it you can write the name of the
+table and select the type of key used. DynamoDB uses two kinds of
+keys, </SPAN><I>Hash </I><SPAN STYLE="font-style: normal">and </SPAN><I>Hash
+and Range</I><SPAN STYLE="font-style: normal">. </SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+</SPAN><I>Hash</I><SPAN STYLE="font-style: normal"> type is used for
+elements </SPAN><SPAN STYLE="font-style: normal">which can be
+considered unique</SPAN><SPAN STYLE="font-style: normal">. For
+example, in the sample application a </SPAN><I>tag</I><SPAN STYLE="font-style: normal">
+is a unique entity, with no duplicate and no </SPAN><SPAN STYLE="font-style: normal">dependency</SPAN><SPAN STYLE="font-style: normal">
+to any other element, so a </SPAN><I>hash</I><SPAN STYLE="font-style: normal">
+key is appropriate. </SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">For
+the images, which are related to a </SPAN><I>tag</I><SPAN STYLE="font-style: normal">,
+we use a </SPAN><I>hash and range</I><SPAN STYLE="font-style: normal">
+key where the </SPAN><I>hash</I><SPAN STYLE="font-style: normal">
+match</SPAN><SPAN STYLE="font-style: normal">es</SPAN><SPAN STYLE="font-style: normal">
+the </SPAN><I>hash</I><SPAN STYLE="font-style: normal"> of an
+existing tag and the </SPAN><I>range</I><SPAN STYLE="font-style: normal">
+part, a date stored as a string, allow</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
+us to differentiate each individual image belonging to a given tag.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">First
+we want to create a table to store the tags, so we type </SPAN><I>tag</I><SPAN STYLE="font-style: normal">
+as name and select a </SPAN><I>hash key</I><SPAN STYLE="font-style: normal">
+with name </SPAN><I>id</I><SPAN STYLE="font-style: normal"> and type
+</SPAN><I>string</I><SPAN STYLE="font-style: normal"> as the key of
+the table:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_539ce689.png" NAME="graphics2" ALIGN=LEFT WIDTH=643 HEIGHT=504 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Pressing
+</SPAN><I>Continue</I><SPAN STYLE="font-style: normal"> brings us to
+the next screen, where you can add additional indexes:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m6dbb07b0.png" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=446 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">We
+don't need any, so we press </SPAN><I>Continue </I><SPAN STYLE="font-style: normal">again.
+The following screen lets us select the P</SPAN><I>rovisioned
+Capacity</I><SPAN STYLE="font-style: normal">. DynamoDB reserves a
+certain capacity for read and write operations on each table you
+create:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_64642e0f.png" NAME="graphics4" ALIGN=LEFT WIDTH=643 HEIGHT=481 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+popup contains links that provide a more detailed description o</SPAN><SPAN STYLE="font-style: normal">n
+how does </SPAN><SPAN STYLE="font-style: normal">capacity </SPAN><SPAN STYLE="font-style: normal">work</SPAN><SPAN STYLE="font-style: normal">,
+but a rough approximation is that each capacity unit is </SPAN><SPAN STYLE="font-style: normal">one</SPAN><SPAN STYLE="font-style: normal">
+read or write of a </SPAN><SPAN STYLE="font-style: normal">random</SPAN><SPAN STYLE="font-style: normal">
+item </SPAN><SPAN STYLE="font-style: normal">per</SPAN><SPAN STYLE="font-style: normal">
+second. Be aware that Amazon bills per capacity reserved, even if it
+is not used, so try to be conservative in your choice as you can
+modify it later on if required.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">In
+the </SPAN><SPAN STYLE="font-style: normal">next</SPAN><SPAN STYLE="font-style: normal">
+screen we can configure alarms so we are notified if the read or
+write capacity is over a certain limit, that way the we can act
+accordingly </SPAN><SPAN STYLE="font-style: normal">by</SPAN><SPAN STYLE="font-style: normal">
+increasing the resources allocated for the table:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m300729d2.png" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=499 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">The
+last screen is a summary of the table configuration, including an
+estimate of the monthly cost of keeping the table active:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m49ae5898.png" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=477 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Once
+</SPAN><SPAN STYLE="font-style: normal">the </SPAN><I>tag</I><SPAN STYLE="font-style: normal">
+table is </SPAN><SPAN STYLE="font-style: normal">created, we can add
+the </SPAN><I>photos</I><SPAN STYLE="font-style: normal"> table </SPAN><SPAN STYLE="font-style: normal">to
+DynamoDB</SPAN><SPAN STYLE="font-style: normal">. Set a </SPAN><I>hash
+and range</I><SPAN STYLE="font-style: normal"> key in the first
+screen, as follows:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_m5a94a04b.png" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=504 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+</SPAN><SPAN STYLE="font-style: normal">other screens of the process
+</SPAN><SPAN STYLE="font-style: normal">match the ones seen when
+creating the </SPAN><I>tag</I><SPAN STYLE="font-style: normal">
+table.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">At
+this point</SPAN><SPAN STYLE="font-style: normal"> we have created
+the tables we need for our application in DynamoDB. You can </SPAN><SPAN STYLE="font-style: normal">test
+them by configuring the Amazon AWS connection details in the sample
+application, in your development environment, and running the
+application. After the metadata is loaded from Flickr, you can come
+back to the console and explore the tables to see the stored </SPAN><SPAN STYLE="font-style: normal">data</SPAN><SPAN STYLE="font-style: normal">.</SPAN></FONT></P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Configure
+Amazon RDS (MySQL)</FONT></H3>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">As mentioned when
+creating the sample application, we use MySQL to store all the user
+details  </FONT><FONT FACE="Times New Roman, serif">generated</FONT><FONT FACE="Times New Roman, serif">
+by Play Authenticate. To deploy our application in Amazon AWS, we
+need to create a MySQL database in RDS </FONT><FONT FACE="Times New Roman, serif">to
+</FONT><FONT FACE="Times New Roman, serif">store </FONT><FONT FACE="Times New Roman, serif">the</FONT><FONT FACE="Times New Roman, serif">
+data.</FONT></P>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">The </SPAN></FONT><A HREF="https://console.aws.amazon.com/rds/home?region=eu-west-1#"><SPAN LANG="en-GB">RDS
+console</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+allows you to </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">create
+a MySQL instance that </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">is</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+completely managed by Amazon AWS, including </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">the
+</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">backups
+of your data. To start, press the </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB"><I>Launch
+a DB instance</I></SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+button:</SPAN></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m564c953.png" NAME="graphics8" ALIGN=LEFT WIDTH=643 HEIGHT=366 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">After
+pressing the button, the wizard to create the database is sta</FONT><FONT FACE="Times New Roman, serif">r</FONT><FONT FACE="Times New Roman, serif">ted.
+At the first screen, select the database type needed for the
+application, in this case </FONT><FONT FACE="Times New Roman, serif"><I>MySQL</I></FONT><FONT FACE="Times New Roman, serif">:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m15e0928d.png" NAME="graphics9" ALIGN=LEFT WIDTH=643 HEIGHT=572 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">In
+the </FONT><FONT FACE="Times New Roman, serif">next</FONT><FONT FACE="Times New Roman, serif">
+screen we can configure the database:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_50629891.png" NAME="graphics10" ALIGN=LEFT WIDTH=643 HEIGHT=427 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">Among
+the different options available, you can select the version of MySQL
+to use, the size of the instance and </FONT><FONT FACE="Times New Roman, serif">its</FONT><FONT FACE="Times New Roman, serif">
+allocated storage. Remember to write down the identifier, username
+and password as they are required by the </FONT><FONT FACE="Times New Roman, serif">sample
+</FONT><FONT FACE="Times New Roman, serif">application to connect to
+the instance.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">After
+pressing</SPAN></FONT><I><FONT FACE="Times New Roman, serif">
+Continue</FONT></I><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">,
+the next screen allows us to configure additional details, like the
+port used to connect to the database:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m5db1a0ab.png" NAME="graphics11" ALIGN=LEFT WIDTH=643 HEIGHT=398 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">The
+following screen provides backup configuration, including the time at
+which we want to create the backups:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_6fa1549c.png" NAME="graphics12" ALIGN=LEFT WIDTH=643 HEIGHT=341 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">The
+last screen shows a summary of the configuration for this database
+instance:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m39389dd4.png" NAME="graphics13" ALIGN=LEFT WIDTH=643 HEIGHT=514 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"> <FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">After
+pressing </SPAN></FONT><I><FONT FACE="Times New Roman, serif">Launch
+DB Instance</FONT></I><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">
+we </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">can
+see the database being created in the dashboard:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m3b008df9.png" NAME="graphics14" ALIGN=LEFT WIDTH=643 HEIGHT=165 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">At
+this stage we have a fully functional MySQL database that we can use
+to </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">store
+user details in the sample application.</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">If
+you need to scale your RDS instance, Amazon gives you two
+alternatives. You can resize the instance, using a more powerful box
+to run the database. Or you can create read-only replicas, which
+increase the throughput of the database when reading data. Both
+actions are managed by Amazon, you just need to select to command via
+the UI and the database settings are modified as requested.</FONT></P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Configure
+an EC2 instance</FONT></H3>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">This
+section describes how to create your Amazon EC2 instance. After the
+instance is running, Ansible is used to configure </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">it</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+(deploying the sample application code) and a </SPAN></FONT><A HREF="http://docs.aws.amazon.com/gettingstarted/latest/wah/getting-started-create-custom-ami.html"><SPAN LANG="en-GB">custom
+AMI</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+is created. </SPAN></FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Be aware that
+this section only describes how to create a single instance that is
+used </FONT><FONT FACE="Times New Roman, serif">to generate a custom
+AMI</FONT><FONT FACE="Times New Roman, serif">. The</FONT><FONT FACE="Times New Roman, serif">se</FONT><FONT FACE="Times New Roman, serif">
+steps can be replicated to create </FONT><FONT FACE="Times New Roman, serif">instances
+for other environments, like a development environment or a
+production deployment. </FONT>
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Alternatively,
+once the custom AMI is created you can use it to deploy additional
+EC2 instances as you need them. Simply select the custom AMI instead
+of the default Ubuntu one when creating the EC2 instance, and skip
+the remaining steps.</FONT></P>
+<H4 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Create
+the instance</FONT></H4>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The <A HREF="https://console.aws.amazon.com/ec2/v2/home?region=eu-west-1">Amazon
+EC2 console</A> allows you to manage your <A HREF="http://aws.amazon.com/ec2/">EC2</A>
+instances. An EC2 instance is a virtual server managed by Amazon and
+billed by the hour. Amazon provides <A HREF="http://aws.amazon.com/ec2/instance-types/">several
+types</A> of instances, with different amounts of RAM and CPU power
+available for each one.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">To create an EC2
+instance press the <I>Launch Instance</I><SPAN STYLE="font-style: normal">
+button in the console:</SPAN></FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_41f1c1ed.png" NAME="graphics16" ALIGN=LEFT WIDTH=643 HEIGHT=433 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">This
+opens a window in which you can select how to create the instance:</FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_2652db2d.png" NAME="graphics17" ALIGN=LEFT WIDTH=643 HEIGHT=473 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">Select
+<I>Classic Wizard</I><SPAN STYLE="font-style: normal"> and press
+</SPAN><I>Continue</I><SPAN STYLE="font-style: normal">.</SPAN><I>
+</I><SPAN STYLE="font-style: normal">The next screen shows a list of
+AMI to load as operating system in the server. The default AMI are
+standalone operating systems, with no additional software installed.
+We want one of these so we can configure the server as our
+application needs. In the </SPAN><I>Quick start </I><SPAN STYLE="font-style: normal">tab,
+select </SPAN><I>Ubuntu Server 12.04.2 LTS</I><SPAN STYLE="font-style: normal">:</SPAN></FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_736eec3d.png" NAME="graphics18" ALIGN=LEFT WIDTH=643 HEIGHT=421 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">This
+brings us to a screen where we can select how many instances we want
+to create and the type of instance. Currently we only want 1
+instance, that we will use to generate our custom AMI. We select a </SPAN></FONT><I>M1
+small </I><SPAN STYLE="font-style: normal">instance type which is big
+enough to configure the environment.</SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">Be aware that </SPAN><I>t1
+micro</I><SPAN STYLE="font-style: normal"> instances, although much
+cheaper, are not suitable for setting up this sample application. The
+lack of RAM and computational power in these instances means that
+some operating systems, like Ubuntu, kill heavy computation tasks
+after a certain period of time. As a result you can't build a Play
+Framework application in a </SPAN><I>micro</I><SPAN STYLE="font-style: normal">
+instance, as the </SPAN><I>dist</I><SPAN STYLE="font-style: normal">
+process is terminated by the operating system before finishing</SPAN><SPAN STYLE="font-style: normal">:</SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_64a462ad.png" NAME="graphics19" ALIGN=LEFT WIDTH=643 HEIGHT=440 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+following screen provides some more instance details. We activate
+</SPAN><I>Termination Protection</I><SPAN STYLE="font-style: normal">
+as once an instance is terminated, all its contents are lost. </SPAN><SPAN STYLE="font-style: normal">This
+avoids costly mistakes. </SPAN><SPAN STYLE="font-style: normal">We
+leave the default options for the other fields in this example, but
+you may want to read about </SPAN><I>IAM Role</I><SPAN STYLE="font-style: normal">
+in your deployment to </SPAN><SPAN STYLE="font-style: normal">better
+</SPAN><SPAN STYLE="font-style: normal">safeguard access to the
+instance:</SPAN></FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_241fdd7f.png" NAME="graphics20" ALIGN=LEFT WIDTH=643 HEIGHT=433 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+next s</SPAN><SPAN STYLE="font-style: normal">creen contains more
+instance details of which we accept the defaults:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m54ce7f54.png" NAME="graphics21" ALIGN=LEFT WIDTH=643 HEIGHT=443 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">And
+in the following window we add a name to identify the instance:</FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_m4061220.png" NAME="graphics22" ALIGN=LEFT WIDTH=643 HEIGHT=455 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">This
+brings us to a very important step, the creation of they key pair
+values. In this step we create the key pair that is used by </SPAN><I>SSH</I><SPAN STYLE="font-style: normal">
+to connect to this instance. Without it, we are not able to log into
+it nor to execute the Ansible scripts to configure the server. If you
+have another Amazon key pair, you can select it as the one to use.
+Otherwise, as in the current example, you can create a new key pair
+by giving </SPAN><SPAN STYLE="font-style: normal">it </SPAN><SPAN STYLE="font-style: normal">a
+name and pressing </SPAN><I>Create and Download</I><SPAN STYLE="font-style: normal">:</SPAN></FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_ma357471.png" NAME="graphics23" ALIGN=LEFT WIDTH=643 HEIGHT=436 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Once
+generated and downloaded, the wizard displays another very important
+screen, the firewall settings. In this screen you can select an
+existing security group or, as in this example, create your own. We
+create a new group called </SPAN><I>sample-play-aws</I><SPAN STYLE="font-style: normal">
+which allows any SSH, HTTP and HTTPS connections into the machine.
+This way we can run Ansible scripts and connect to the server once
+the application is running:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m5748fc47.png" NAME="graphics24" ALIGN=LEFT WIDTH=643 HEIGHT=434 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">The
+last screen of the wizard shows a summary of the options selected and
+allows us to modify them before launching the instance itself:</FONT></P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_1bf5f997.png" NAME="graphics25" ALIGN=LEFT WIDTH=643 HEIGHT=443 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Once
+the instance is running you can see an entry in the console with its
+name, status </SPAN><I>Running</I><SPAN STYLE="font-style: normal">
+and the address of the instance as shown in the following image:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_f653d2b.png" NAME="graphics26" ALIGN=LEFT WIDTH=643 HEIGHT=275 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">At
+this stage, your instance is ready to be configured using the Ansible
+scripts.</FONT></P>
+<H4 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Execute
+Ansible scripts</FONT></H4>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">To run the
+scripts you need to have Ansible installed. If you have not installed
+it yet, please follow the <A HREF="http://www.ansibleworks.com/docs/gettingstarted.html">instructions</A>
+corresponding to your development environment. Ansible 1.2 is
+required to run the scripts in this sample.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">The first step to
+run Ansible is to copy the IP of the EC2 instance to the
+corresponding hosts files. In this scenario, edit <I>testing.hosts</I><SPAN STYLE="font-style: normal">
+and copy the IP </SPAN><SPAN STYLE="font-style: normal">under</SPAN><SPAN STYLE="font-style: normal">
+the </SPAN><I>ireland-webservers</I><SPAN STYLE="font-style: normal">
+entry, as follows:</SPAN></FONT></P>
+<TABLE WIDTH=635 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=12>
+	<COL WIDTH=615>
+	<TR>
+		<TD WIDTH=12 STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western">1
+<SPAN LANG="en-GB">2</SPAN>
+<SPAN LANG="en-GB">3</SPAN>
+<SPAN LANG="en-GB">4</SPAN>
+<SPAN LANG="en-GB">5</SPAN></PRE>
+		</TD>
+		<TD WIDTH=615 STYLE="border: none; padding: 0cm">
+			<PRE LANG="en-GB" CLASS="western"><FONT COLOR="#888888"># Contains the addresses of all EC2 instances used in testing in each region</FONT>
+
+<FONT COLOR="#888888"><SPAN LANG="en-GB"># Webservers in Ireland region</SPAN></FONT>
+<SPAN LANG="en-GB">[<FONT COLOR="#996633">ireland-webservers</FONT>]</SPAN>
+<SPAN LANG="en-GB">ec2-54-216-124-229.eu-west-1.compute.amazonaws.com</SPAN></PRE>
+		</TD>
+	</TR>
+</TABLE>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">You
+can edit </SPAN><I>production.hosts</I><SPAN STYLE="font-style: normal">
+and </SPAN><I>development.hosts</I><SPAN STYLE="font-style: normal">
+in a similar way if you are conf</SPAN><SPAN STYLE="font-style: normal">i</SPAN><SPAN STYLE="font-style: normal">g</SPAN><SPAN STYLE="font-style: normal">u</SPAN><SPAN STYLE="font-style: normal">ring
+those environments.</SPAN></FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">The
+next step is to set the key pair downloaded in the previous section
+for use in </SPAN><SPAN STYLE="font-style: normal">SSH</SPAN><SPAN STYLE="font-style: normal">.
+First we have to modify the attributes of the key to be read only,
+and then we add it to </SPAN><SPAN STYLE="font-style: normal">SSH</SPAN><SPAN STYLE="font-style: normal">
+via </SPAN><I>ssh-add</I><SPAN STYLE="font-style: normal">:</SPAN></FONT></P>
+<P LANG="en-GB">    <FONT FACE="Times New Roman, serif"><I>$chmod 600
+sample-play-aws.pem<BR>    $ssh-add sample-play-aws.pem</I></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">Ensure
+that all the Ansible configuration is as expected. Check the
+following files and update their values if needed:</FONT></P>
+<UL>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal"><B>group_vars/all:</B></SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal"><SPAN STYLE="font-weight: normal">
+	set the proper configuration details, including your email and
+	deployment paths</SPAN></SPAN></FONT></P>
+	<LI><P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal"><B>roles/webtier/files/</B></SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal"><B>start:</B></SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">
+	add the proper values to connect to the RDS db and AWS credentials
+	</SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">via
+	</SPAN></FONT><FONT FACE="Times New Roman, serif"><I>-D</I></FONT><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">
+	JVM properties</SPAN></FONT></P>
+</UL>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">At this point we
+are ready to run the scripts. Go to the folder where you have
+deployed your Ansible files and execute the following command:</FONT></P>
+<P LANG="en-GB">    <FONT FACE="Times New Roman, serif"><I>$</I><I>ansible-playbook
+-i testing.hosts site.yml -u ubuntu </I><I>--</I><I>sudo </I></FONT>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">The
+script configures the server executing the Playbooks described above.
+It takes several minutes to run, and once it finishes you can access
+the deployed application at:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal">   
+<FONT FACE="Times New Roman, serif"><I>http://&lt;amazon_ec2_ip&gt;/</I></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">You
+should see the main page of the application loading on the browser.</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">With
+the server configured and the application deployed, we are ready to
+create the custom AMI for our environment.</FONT></P>
+<H4 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Create
+custom AMI</FONT></H4>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Creating a <A HREF="http://docs.aws.amazon.com/gettingstarted/latest/wah/getting-started-create-custom-ami.html">custom
+AMI</A> is very simple. Go back to the <A HREF="https://console.aws.amazon.com/ec2/v2/home?region=eu-west-1">Amazon
+EC2 console</A> and right click on the instance name. A menu to
+manage the instance opens: </FONT>
+</P>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_7fd13514.png" NAME="graphics27" ALIGN=LEFT WIDTH=643 HEIGHT=320 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">Select the <I>Create
+Image (EBS AMI) </I><SPAN STYLE="font-style: normal">option. This
+opens a window in which you can give a name to your AMI and select
+which volumes to export. In this example we export the </SPAN><I>Root</I><SPAN STYLE="font-style: normal">
+volume that we have configured with Ansible:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m7139996c.jpg" NAME="graphics28" ALIGN=LEFT WIDTH=643 HEIGHT=400 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">After
+pressing </SPAN><I>Yes, Create,</I><SPAN STYLE="font-style: normal">
+AWS starts the process to create the AMI. This take</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
+a while. </SPAN><SPAN STYLE="font-style: normal">Y</SPAN><SPAN STYLE="font-style: normal">ou
+can see the AMI in the console </SPAN><SPAN STYLE="font-style: normal">by
+selecting the </SPAN><I>Images &gt; </I><I>AMIs</I><SPAN STYLE="font-style: normal">
+menu</SPAN><SPAN STYLE="font-style: normal">:</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m70b92898.png" NAME="graphics30" ALIGN=LEFT WIDTH=643 HEIGHT=283 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif"><SPAN STYLE="font-style: normal">Once
+the creation process finishes the status will change to </SPAN><I>Complete
+(green)</I><SPAN STYLE="font-style: normal"> and </SPAN><SPAN STYLE="font-style: normal">at
+that moment </SPAN><SPAN STYLE="font-style: normal"> you can use this
+AMI on your deployments.</SPAN></FONT></P>
+<H4 LANG="en-GB" CLASS="western">Deploy other instances</H4>
+<P LANG="en-GB">As mentioned above, you can create more instances
+using Ansible. An alternative is to create a new instance using the
+custom AMI generated in the previous step. To do this, create a new
+instance as mentioned before, but when choosing the AMI click on the
+tab <I>My AMIs</I><SPAN STYLE="font-style: normal">. There you </SPAN><SPAN STYLE="font-style: normal">can</SPAN><SPAN STYLE="font-style: normal">
+see a list of your custom AMI</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">:</SPAN></P>
+<P LANG="en-GB" STYLE="font-weight: normal"><IMG SRC="deploy%20in%20ec2_html_ad2792d.png" NAME="graphics29" ALIGN=LEFT WIDTH=643 HEIGHT=422 BORDER=0><BR><BR clear="left">Choose
+the AMI you created and complete the other steps of the wizard as
+indicated before. Remember that this new EC2 instance already
+contains the server configuration and the application deployment, as
+specified by the Ansible scripts we executed, so there is no need to
+run Ansible again on this host.</P>
+<H3 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Configure
+the Load Balancer</FONT></H3>
+<P><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">Amazon
+</SPAN></FONT><A HREF="http://aws.amazon.com/elasticloadbalancing/"><SPAN LANG="en-GB">Elastic
+Load Balancing</SPAN></A><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+is an AWS component that distributes the load evenly along your EC2
+instances. Not only that, the balancer detects the health of the
+associated instances and </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">it
+can </SPAN></FONT><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">
+restart faulty instances, ensuring high availability for your
+application.</SPAN></FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">The
+Load Balancer can be created from the EC2 Console by selecting the
+<I>Network &amp; Security &gt; </I><I>Load Balancers </I>menu:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m494f5643.png" NAME="graphics31" ALIGN=LEFT WIDTH=643 HEIGHT=294 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">The
+first window of the wizard allows you to select which protocols are
+managed by the balancer  and the mappings between the ports
+accessible via the internet and the internal ports accessible in your
+EC2 instances. In this sample, we only want to map the port 80,
+redirecting all the requests to the corresponding port 80 of one of
+our running instances:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_12c97c9f.png" NAME="graphics32" ALIGN=LEFT WIDTH=643 HEIGHT=450 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">The
+next step sets the <I>Health Check</I> parameters, including which
+protocol, port and path has to be used for the checks and the
+thresholds to consider an instance as healthy or unhealthy. Unhealthy
+instances are automatically removed from the balancer:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_m54ac0d2f.png" NAME="graphics33" ALIGN=LEFT WIDTH=643 HEIGHT=462 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">After
+pressing <I>Continue</I>, we can select the instances to be managed
+by the Load Balancer:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_7c242e47.png" NAME="graphics34" ALIGN=LEFT WIDTH=643 HEIGHT=458 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">The
+last screen shows a summary of the values selected for the Load
+Balancer:</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="deploy%20in%20ec2_html_4f9ca9d0.png" NAME="graphics35" ALIGN=LEFT WIDTH=643 HEIGHT=473 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">At
+this stage we have created a load balancer that will distribute the
+load evenly across our selected EC2 instances. We can manually add or
+remove instances to increase the capacity of our application and
+having total control of the costs.</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">Having
+created the Elastic Load Balancer, you can obtain its public <A HREF="http://aws.amazon.com/articles/1346">Elastic
+IP</A>. This allows you to map the balancer to a custom domain via
+<A HREF="http://aws.amazon.com/route53/">Route 53</A> or your own DNS
+management system.</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">Manual
+creation is fine for a testing or development environment, but in
+production we want to create as many instances as we need, on demand,
+to automatically scale the application and resolve all the requests.
+The Elastic Load Balancer we configured doesn't allow it, but the
+next sections explain how to achieve this using AWS.</FONT></P>
+<H3 LANG="en-GB" CLASS="western">Autoscaling the Application</H3>
+<P><SPAN LANG="en-GB"><A HREF="http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html">Scaling
+based on demand</A> is something basic for a production environment.
+This gives </SPAN><SPAN LANG="en-GB">an </SPAN><SPAN LANG="en-GB">
+application the capacity to answer all the requests received, while
+saving money in off-peak times by stopping unused instances. </SPAN>
+</P>
+<P><SPAN LANG="en-GB">Amazon AWS allows you to define an <A HREF="http://aws.amazon.com/autoscaling/">Autoscaling
+Group</A> which can be used </SPAN><SPAN LANG="en-GB">for this
+purpose. </SPAN><SPAN LANG="en-GB">Unfortunately, there is no GUI to
+create </SPAN><SPAN LANG="en-GB">it</SPAN><SPAN LANG="en-GB">. You
+have to download the <A HREF="http://aws.amazon.com/developertools//2535">Auto
+Scaling Command Line Tool</A> and </SPAN><SPAN LANG="en-GB">follow
+the <A HREF="http://docs.aws.amazon.com/AutoScaling/latest/GettingStartedGuide/SetupCLI.html">instructions</A>
+to install the tool in your environment. </SPAN><SPAN LANG="en-GB">After
+that, a set of commands have to be executed to enable <A HREF="http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html">Scaling
+based on demand</A></SPAN><SPAN LANG="en-GB">.</SPAN></P>
+<P><SPAN LANG="en-GB">The following sections show the main steps in
+the process, but please read the <A HREF="http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html">Scaling
+based on demand</A> instructions to have a full understanding of the
+steps involved.</SPAN></P>
+<H4 LANG="en-GB" CLASS="western">Creating the Autoscaling Group</H4>
+<P><SPAN LANG="en-GB">An  </SPAN><SPAN LANG="en-GB"><A HREF="http://aws.amazon.com/autoscaling/">Autoscaling
+Group</A> </SPAN><SPAN LANG="en-GB">facilitates autoscaling of your
+application by deploying new instances using a preselected AMI. </SPAN><SPAN LANG="en-GB">To
+create the autoscaling group you need the </SPAN><SPAN LANG="en-GB">id
+of your </SPAN><SPAN LANG="en-GB">custom AMI. </SPAN><SPAN LANG="en-GB">You</SPAN><SPAN LANG="en-GB">
+can find </SPAN><SPAN LANG="en-GB">it </SPAN><SPAN LANG="en-GB">in
+the AMI section of the </SPAN><SPAN LANG="en-GB">EC2 console. In this
+section we refer to that id as </SPAN><SPAN LANG="en-GB"><I>ami-id</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">The first step is to
+c</SPAN>reate the <I>launch config</I><I>uration</I>. A <I>launch
+configuration</I><SPAN STYLE="font-style: normal"> defines the
+instance type to create and the AMI to use for autoscaling. If a new
+EC2 instance is needed, AWS reads the </SPAN><I>launch configuration
+</I><SPAN STYLE="font-style: normal">and creates a new EC2 instance
+of the given type using the selected AMI. To create your </SPAN><I>launch
+configuration</I><SPAN STYLE="font-style: normal">, execute:</SPAN></P>
+<P LANG="en-GB">    <I>$as-create-launch-config MyLaunchConfig
+--image-id ami-id --instance-type m1.small</I></P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">The next step is to define
+the <I>autoscaling group</I>. The group defines the number of
+instances we want executing our application (minimum and maximum),
+the AWS region in which we want them  and the <I>launch configuration</I>
+to use when spinning new instances. We can also link the group to an
+Elastic Load Balancer, to ensure that all the instances created are
+accessed via a common entry point. In our example we want to link the
+new group to the Load Balancer created previously, this way the new
+instances are accessible via our custom domain.</P>
+<P LANG="en-GB" STYLE="font-style: normal">To create the group,
+execute: 
+</P>
+<P LANG="en-GB">    <I>$as-create-auto-scaling-group MyGroup
+--launch-configuration MyLaunchConfig --availability-zones
+“eu-west-1” --min-size 1 --max-size 3 –desired-capacity 2
+--load-balancers sample-aws—balancer</I></P>
+<P LANG="en-GB" STYLE="font-style: normal">The command indicates AWS
+that we create the instances in <I>eu-west-1</I> and we link them to
+the load balancer defined in the previous section using its name as
+the reference (<I>sample-aws-balancer</I>). We notify AWS that we
+want between 1 and 3 instances, with a desired capacity of 2. This
+means that we will always have at least one instance running the
+application and, if the demand requires it, we can have up to three
+<I>m1.small</I> EC2 instances serving requests.</P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal">The last step is to create
+<I>scaling policies</I> that manage the resources. For example, we
+can create a policy that increases the capacity of our application by
+30% and it is linked to the previous <I>autoscaling group </I>via the
+command:</P>
+<P>    <SPAN LANG="en-GB"><I>$as-put-scaling-policy
+my-scaleout-policy -–auto-scaling-group </I></SPAN><SPAN LANG="en-GB"><I>MyGroup</I></SPAN><SPAN LANG="en-GB"><I>
+--adjustment=30 --type PercentChangeInCapacity</I></SPAN></P>
+<P STYLE="font-style: normal"><SPAN LANG="en-GB">Each scaling policy
+command returns the ARN associated to the policy, for example:</SPAN></P>
+<PRE CLASS="western"><I><SPAN LANG="en-GB">arn:aws:autoscaling:eu-west-1:123456789012:scalingPolicy:ac542982-cbeb-4294-891c-a5a941dfa787:autoScalingGroupName/MyGroup:policyName/my-scaleout-policy</SPAN></I></PRE><P STYLE="font-style: normal">
+<SPAN LANG="en-GB"><BR>Keep these names as they are necessary to
+create the Cloudwatch alarms.</SPAN></P>
+<P STYLE="font-style: normal"><BR><BR>
+</P>
+<P STYLE="font-style: normal"><SPAN LANG="en-GB">We can create a
+second policy to decrease the number of running instances if there is
+not enough traffic:</SPAN></P>
+<P STYLE="font-style: normal">    <SPAN LANG="en-GB"><I>$as-put-scaling-policy
+my-scalein-policy –auto-scaling-group </I></SPAN><SPAN LANG="en-GB"><I>MyGroup</I></SPAN><SPAN LANG="en-GB"><I>
+--adjustment=-2  --type ChangeInCapacity</I></SPAN></P>
+<P STYLE="font-style: normal"><SPAN LANG="en-GB">As you can see,
+s</SPAN><SPAN LANG="en-GB">everal scaling policies may exist for a
+given group, controlling different aspects of the application. Please
+check the <A HREF="http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/WhatIsAutoScaling.html">AWS
+documentation</A> for more information about </SPAN><SPAN LANG="en-GB">scaling
+</SPAN><SPAN LANG="en-GB">policies.</SPAN></P>
+<H4 CLASS="western"><SPAN LANG="en-GB">Using Cloudwatch to Trigger
+Autoscaling</SPAN></H4>
+<P LANG="en-GB">In the previous section, we created scaling policies
+that provide instructions to the Auto Scaling group about how to
+scale in and scale out when the specified conditions change. In this
+section we  create two alarms, associated with the two scaling
+policies defined before. These alarms identify the metrics to watch
+and define the conditions for scaling. 
+</P>
+<P LANG="en-GB">The first alarm increases the size of the group if
+the average CPU usage is over 80% in a period of  2 minutes:</P>
+<P LANG="en-GB">    <I>$</I><I>mon-put-metric-alarm --alarm-name
+AddCapacity  --metric-name CPUUtilization --namespace “AWS/EC2”
+--statistic Average --period 120 --threshold 80 --comparison-operator
+GreaterThanOrEqualToThreshold --dimensions
+“AutoScalingGroupName=</I><I>MyGroup</I><I>” --evaluation-periods
+2 </I><I>--a</I><I>larm-actions </I><I>&lt;ARN_policy_</I><I>scalein</I><I>&gt;</I><I>
+   </I>
+</P>
+<P LANG="en-GB">The second alarm decreases the size of the group when
+the average CPU usage goes below 40% in a period of 2 minutes:</P>
+<P>    <SPAN LANG="en-GB"><I>$</I></SPAN><SPAN LANG="en-GB"><I>mon-put-metric-alarm
+--alarm-name RemoveCapacity --metric-name CPUUtilization --namespace
+“AWS/EC2”  --statistic Average  --period 120  --threshold 40 
+--comparison-operator LessThanOrEqualToThreshold  --dimensions
+“AutoScalingGroupName=</I></SPAN><SPAN LANG="en-GB"><I>MyGroup</I></SPAN><SPAN LANG="en-GB"><I>”
+ --evaluation-periods 2 –alarm-actions </I></SPAN><SPAN LANG="en-GB"><I>&lt;ARN_policy_scaleout&gt;</I></SPAN></P>
+<P LANG="en-GB">With both alarms we ensure the creation or removal of
+instances according to CPU usage, not wasting resources by having
+underutilized servers while ensuring we have capacity to fulfil the
+requests we receive.</P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">You
+can verify your <I>Cloudwatch alarms</I> by running the command:</FONT></P>
+<P>    <I><FONT FACE="Times New Roman, serif"><SPAN LANG="en-GB">$</SPAN></FONT>mon-describe-alarms
+--headers</I></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">which
+returns a list of the active alarms and its associated scaling
+policies.</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">After
+running these steps, you have configured an automatic scaling system.
+This system adds new instances if the traffic increases by a certain
+threshold and automatically removes instances which are not being
+fully utilized.</FONT></P>
+<P LANG="en-GB" STYLE="font-style: normal"><FONT FACE="Times New Roman, serif">Amazon
+AWS provides an extensive set of tools to define the autoscaling of
+your application. This example has shown the necessary steps to
+configure our sample application, but there are many other options
+available. Please read the <A HREF="http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/WhatIsAutoScaling.html">documentation</A>
+to know more about them.</FONT></P>
+<H2 LANG="en-GB" CLASS="western"><FONT FACE="Times New Roman, serif">Testing
+the deployment</FONT></H2>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">At this stage we
+have deployed the application in EC2 and enabled scaling based on
+demand. If we access the application via the custom domain we
+associated to our Elastic Load Balancer, we see the main page of the
+application:</FONT></P>
+<P LANG="en-GB"><BR><BR>
+</P>
+<H2 LANG="en-GB" CLASS="western"></H2>
+<P LANG="en-GB"><IMG SRC="deploy%20in%20ec2_html_m1616ca6c.png" NAME="graphics15" ALIGN=LEFT WIDTH=643 HEIGHT=252 BORDER=0><BR><BR clear="left"><FONT FACE="Times New Roman, serif">To
+test the scaling of the application I recommend using <A HREF="http://www.joedog.org/siege-home/">Siege</A>.
+Usage of Siege is outside the scope of this document, but you can
+find an example in <A HREF="http://www.techrepublic.com/article/test-your-web-server-lay-siege-to-it/5171727">here</A>.</FONT></P>
+<P LANG="en-GB"><FONT FACE="Times New Roman, serif">This concludes
+the second chapter of the article. At this point we have created a
+Play Framework application that interacts with Amazon AWS and we have
+deployed this application in Amazon EC2 using Ansible. The next
+chapter explains how to deploy the same application in <A HREF="http://aws.amazon.com/elasticbeanstalk/">Elastic
+BeanStalk</A>.</FONT></P>
+</BODY>
+</HTML>

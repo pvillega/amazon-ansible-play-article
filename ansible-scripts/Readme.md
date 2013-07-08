@@ -36,18 +36,20 @@ There are 2 folders that contain specific configuration for the Playbooks, depen
 The roles folder contains the different 'roles'. A role is a set of Playbooks, templates and other files that do a specific setup in the server. For example, the 'common' role has a list of commands to secure a Linux server. Each role follows the Ansible [best practices](http://ansible.cc/docs/bestpractices.html).
 
 * roles/common                  Contains Playbooks to setup an Ubuntu server with the basic applications and security settings
-* roles/webtier                 Contains Playbooks to setup an Ubuntu webserver with all the tools needed to deploy a Play application.
+* roles/webtier                 Contains Playbooks to setup an Ubuntu webserver with all the tools needed to deploy a Play application, including custom `start` file.
 * roles/dbtier                  Empty role. Can be used as a template if you want to deploy your own database server instead of using RDS
 
 ## How to use
 
 Your first step will be to set the proper endpoints in each of the hosts files (development.hosts, testing.hosts, production.hosts), so the Playbooks are executed against the intended targets. These scripts currently contain some sample EC2 public IP as an example.
 
-Next, you will need to set the right variable in `groups_vars/all`, so the scripts know the location of the git repository with the project, etc.
+Next, you will need to set the right variable values in `groups_vars/all`, so the scripts know the location of the git repository with the project, etc.
+
+You will also need to edit the `start` file located in the `files` folder of the `webtier` role, and ensure the right configuration for your Play application is in place. 
 
 Finally, you have to run the scripts. You will need sudo rights in the target machine for this, and the command (assuming default Ubuntu EC2 AMI) will be:
 
-    ansible-playbook -i production site.yml -u ubuntu --sudo
+    ansible-playbook -i production.hosts site.yml -u ubuntu --sudo
 
 Note that this command assumes that your ssh keys are properly set up for ssh to connect to Amazon instances.
 
