@@ -7,7 +7,7 @@
 	<META NAME="AUTHOR" CONTENT="pvillega ">
 	<META NAME="CREATED" CONTENT="20130624;7431700">
 	<META NAME="CHANGEDBY" CONTENT="pvillega ">
-	<META NAME="CHANGED" CONTENT="20130630;19595700">
+	<META NAME="CHANGED" CONTENT="20130804;15180200">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
@@ -30,15 +30,23 @@
 </HEAD>
 <BODY LANG="en-IE" DIR="LTR">
 <H1 LANG="en-GB" CLASS="western">Deploying in Elastic Beanstalk</H1>
-<P><SPAN LANG="en-GB">A</SPAN><SPAN LANG="en-GB">nother option that
-Amazon AWS provides </SPAN><SPAN LANG="en-GB">to deploy the sample
-application </SPAN><SPAN LANG="en-GB">is <A HREF="http://aws.amazon.com/elasticbeanstalk/">Elastic
-Beanstalk</A>. Beanstalk allows you to deploy a <A HREF="http://en.wikipedia.org/wiki/WAR_file_format_(Sun)">WAR</A>
-file in a <A HREF="http://tomcat.apache.org/">Tomcat</A> </SPAN><SPAN LANG="en-GB">(versions
-6 or 7) </SPAN><SPAN LANG="en-GB">environment. The system 
-automatically manages  load balancing and scalability of the
-application, while giving you full access to all Amazon AWS
-components.</SPAN></P>
+<P LANG="en-GB">If the previous chapters we have explained how to
+create and deploy our sample application, using Play Framework and
+Amazon AWS. When we finished the last chapter we had deployed the
+application and setup automatic scalability so it could cope with an
+increase in request numbers.</P>
+<P LANG="en-GB">But what if you are not good doing syadmin tasks? Or
+you just want a simpler way to deploy the application, with even less
+configuration?</P>
+<P><SPAN LANG="en-GB">Amazon AWS </SPAN><SPAN LANG="en-GB">has you
+covered with</SPAN><SPAN LANG="en-GB"> </SPAN><A HREF="http://aws.amazon.com/elasticbeanstalk/">Elastic
+Beanstalk</A><SPAN LANG="en-GB">. Beanstalk allows you to deploy a
+</SPAN><A HREF="http://en.wikipedia.org/wiki/WAR_file_format_(Sun)">WAR</A><SPAN LANG="en-GB">
+file in a </SPAN><A HREF="http://tomcat.apache.org/">Tomcat</A><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB">(versions 6 or 7) </SPAN><SPAN LANG="en-GB">environment.
+The system  automatically manages  load balancing and scalability of
+the application, while giving you full access to all Amazon AWS
+components </SPAN><SPAN LANG="en-GB">(RDS, etc.)</SPAN><SPAN LANG="en-GB">.</SPAN></P>
 <P><SPAN LANG="en-GB">We have to </SPAN><SPAN LANG="en-GB">give a
 warning</SPAN><SPAN LANG="en-GB"> about the integration between
 Beanstalk and Play Framework. While Beanstalk has many benefits and
@@ -47,7 +55,7 @@ it works fine with </SPAN><SPAN LANG="en-GB">a </SPAN><SPAN LANG="en-GB">Play
 it </SPAN><SPAN LANG="en-GB">is </SPAN><SPAN LANG="en-GB">not the
 optimal platform </SPAN><SPAN LANG="en-GB">to execute Play
 applications</SPAN><SPAN LANG="en-GB">. By default, Play expects to
-be run using its embedded <A HREF="http://netty.io/">Netty</A>
+be run using its embedded </SPAN><A HREF="http://netty.io/">Netty</A><SPAN LANG="en-GB">
 server. </SPAN><SPAN LANG="en-GB">Using</SPAN><SPAN LANG="en-GB"> a
 WAR file </SPAN><SPAN LANG="en-GB">to run the application inside a
 JEE container </SPAN><SPAN LANG="en-GB">reduces the performance and,
@@ -62,20 +70,28 @@ instances and the scalability of your application, please use
 Beanstalk; it works and you can focus on the application, not on
 configuring AWS. But you should be aware of the trade off you are
 making.</P>
+<P><SPAN LANG="en-GB">In this chapter we explain how to </SPAN><A HREF="#1.1.Generating the WAR file|outline">generate
+a WAR file</A><SPAN LANG="en-GB"> from our Play application. We go
+through the steps required to </SPAN><A HREF="#1.2.Creating the Beanstalk instance|outline">create
+the Beanstalk instance</A><SPAN LANG="en-GB"> and finally we show how
+to </SPAN><A HREF="#1.3.Deploying to Beanstalk|outline">deploy to
+Beanstalk</A><SPAN LANG="en-GB"> our sample code.</SPAN></P>
 <P LANG="en-GB">The following steps assume that both DynamoDB and RDS
 MySQL are properly set up in Amazon AWS. Check the previous chapter
-for more information on the steps to follow to configure them.</P>
-<H2 LANG="en-GB" CLASS="western">Generating the WAR file</H2>
+for more information on how to configure them.</P>
+<H2 LANG="en-GB" CLASS="western"><A NAME="1.1.Generating the WAR file|outline"></A>
+Generating the WAR file</H2>
 <P><SPAN LANG="en-GB">Play Framework doesn't provide a native tool to
 generate WAR files from the </SPAN><SPAN LANG="en-GB">application
 </SPAN><SPAN LANG="en-GB">source. Thankfully, the community has taken
-to the challenge and <A HREF="http://www.dlecan.com/">Damien Lecan</A>
-has created a plugin to that end, <A HREF="https://github.com/dlecan/play2-war-plugin">Play2War</A>.
+to the challenge and </SPAN><A HREF="http://www.dlecan.com/">Damien
+Lecan</A><SPAN LANG="en-GB"> has created a plugin to that end,
+</SPAN><A HREF="https://github.com/dlecan/play2-war-plugin">Play2War</A><SPAN LANG="en-GB">.
 This section describes the steps to integrate the plugin with our
 existing code </SPAN><SPAN LANG="en-GB">base</SPAN><SPAN LANG="en-GB">
 and how to generate the WAR file from it</SPAN></P>
 <H3 LANG="en-GB" CLASS="western">Adding Play2War to source</H3>
-<P><SPAN LANG="en-GB"><A HREF="https://github.com/dlecan/play2-war-plugin/wiki/Configuration">Integrating</A>
+<P><A HREF="https://github.com/dlecan/play2-war-plugin/wiki/Configuration">Integrating</A><SPAN LANG="en-GB">
 Play2War with an existing Play application is very straightforward.
 Play2War </SPAN><SPAN LANG="en-GB">runs</SPAN><SPAN LANG="en-GB"> as
 a SBT plugin, so first of all we need to edit </SPAN><SPAN LANG="en-GB"><I>project/plugins.sbt</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
@@ -90,9 +106,11 @@ project, so Play Framework knows how to generate the War file when
 asked to. The resulting configuration looks like the following:</P>
 <P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
 </P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=1284 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=1256>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -127,7 +145,7 @@ asked to. The resulting configuration looks like the following:</P>
 32
 33</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=1256 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"><FONT COLOR="#008800"><B>import</B></FONT> <FONT COLOR="#0e84b5"><B>com.github.play2war.plugin._</B></FONT>
 
 <FONT COLOR="#008800"><B>object</B></FONT> <FONT COLOR="#bb0066"><B>ApplicationBuild</B></FONT> <FONT COLOR="#008800"><B>extends</B></FONT> <FONT COLOR="#bb0066"><B>Build</B></FONT> <FONT COLOR="#333333">{</FONT>
@@ -199,32 +217,31 @@ later on, Beanstalk supports this and provides a simple way to add
 JVM options to </SPAN><SPAN STYLE="font-style: normal">a Java</SPAN><SPAN STYLE="font-style: normal">
 container.</SPAN></P>
 <H3 LANG="en-GB" CLASS="western">Generating the WAR</H3>
-<P><SPAN LANG="en-GB">To generate the War file, open a terminal
-window and go to the root folder of the sample application. In there,
-execute:</SPAN></P>
-<P>    <I><SPAN LANG="en-GB">$play war</SPAN></I></P>
+<P LANG="en-GB">To generate the War file, open a terminal window and
+go to the root folder of the sample application. In there, execute:</P>
+<P LANG="en-GB">    <I>$play war</I></P>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">to execute the
 SBT plugin that builds the War file. The resulting War is stored at
 the </SPAN></SPAN><I><SPAN LANG="en-GB">target</SPAN></I><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
-folder that is created at the root of the application. In this
-example </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">the
+folder </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">that
+is created at the root of the application. In this example </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">the
 file is at</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">:</SPAN></SPAN></P>
-<P>    <I><SPAN LANG="en-GB">$target/play-sample-app-1.0-SNAPSHOT.war
-</SPAN></I>
+<P LANG="en-GB">    <I>$target/play-sample-app-1.0-SNAPSHOT.war </I>
 </P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The output of
-executing Play2War is:</SPAN></SPAN></P>
-<P><IMG SRC="beanstalk_html_m179464b7.jpg" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=237 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal">The output of executing
+Play2War is:</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="beanstalk_html_m179464b7.png" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=237 BORDER=0><BR><BR clear="left">
 </P>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">As you can
 see, the Play2War plugin generates a set of jars from the source code
 of the application and stores them inside the War file. All the
 configuration required to run the file inside a container is added as
 per the Servlet version we selected in </SPAN></SPAN><I><SPAN LANG="en-GB">Build.scala</SPAN></I><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">At this stage
-we have created a fully functional War file, ready to be deployed in
-Beanstalk.</SPAN></SPAN></P>
-<H2 LANG="en-GB" CLASS="western">Creating the Beanstalk instance</H2>
+<P LANG="en-GB" STYLE="font-style: normal">At this stage we have
+created a fully functional War file, ready to be deployed in
+Beanstalk.</P>
+<H2 LANG="en-GB" CLASS="western"><A NAME="1.2.Creating the Beanstalk instance|outline"></A>
+Creating the Beanstalk instance</H2>
 <P LANG="en-GB">As we want to deploy the War file in Elastic
 Beanstalk, first we have to create an instance via the <A HREF="https://console.aws.amazon.com/elasticbeanstalk/home?region=eu-west-1#">Elastic
 Beanstalk Console</A>. An instance consists on a servlet container in
@@ -233,37 +250,52 @@ many aspects of the container, simplifying the maintenance of the
 application.</P>
 <P LANG="en-GB">When accessing the console, the first screen allows
 us to select a container for the application:</P>
-<P LANG="en-GB"><IMG SRC="beanstalk_html_3cf79c32.jpg" NAME="graphics2" ALIGN=LEFT WIDTH=643 HEIGHT=379 BORDER=0><BR><BR clear="left">We
-select <I>Tomcat 7</I> as our target container and press <I>Start</I><SPAN STYLE="font-style: normal">.
-Beanstalk starts creating the environment, which may take several
-minutes to be ready. </SPAN>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_470d4dd3.jpg" NAME="graphics2" ALIGN=LEFT WIDTH=643 HEIGHT=189 BORDER=0><BR><BR clear="left">
 </P>
-<P LANG="en-GB"><IMG SRC="beanstalk_html_m72fb2f2f.jpg" NAME="graphics4" ALIGN=LEFT WIDTH=643 HEIGHT=327 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB">We select <I>Tomcat </I>as our target container and
+press <I>Get S</I><I>tart</I><I>ed</I><SPAN STYLE="font-style: normal">.
+</SPAN><SPAN STYLE="font-style: normal">This creates a Tomcat 7
+instance running in a 64 bit Linux machine, which will be used to run
+our application.</SPAN><SPAN STYLE="font-style: normal"> </SPAN><SPAN STYLE="font-style: normal">At
+this point </SPAN><SPAN STYLE="font-style: normal">Beanstalk starts
+creating the environment, which may take several minutes to be ready,
+</SPAN><SPAN STYLE="font-style: normal">and redirects you to the
+dashboard where you can see the progress:</SPAN></P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_56add848.jpg" NAME="graphics8" ALIGN=LEFT WIDTH=643 HEIGHT=245 BORDER=0>
+<BR><BR clear="left">
 </P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">As you can see in
-the </SPAN><I>Events</I><SPAN STYLE="font-style: normal"> view,
+the </SPAN><I>Recent E</I><I>vents</I><SPAN STYLE="font-style: normal">
+</SPAN><SPAN STYLE="font-style: normal">list,</SPAN><SPAN STYLE="font-style: normal">
 Beanstalk is creating all the necessary components for the
 application, including </SPAN><I>auto-scaling</I><SPAN STYLE="font-style: normal">
 and </SPAN><I>Cloud</I><I>W</I><I>atch Alarms</I><SPAN STYLE="font-style: normal">,
 so you don't have to worry about managing them:</SPAN></P>
-<P LANG="en-GB"><IMG SRC="beanstalk_html_38141b03.jpg" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=405 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="beanstalk_html_43ae4546.jpg" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=146 BORDER=0><BR><BR clear="left">
 </P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">Once the initial
-deployment is ready, we can start configuring our application.</SPAN></P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">In the Overview tab,
-the </SPAN><I>Edit Configuration</I><SPAN STYLE="font-style: normal">
-link gives access to several settings for the application. </SPAN><SPAN STYLE="font-style: normal">These</SPAN><SPAN STYLE="font-style: normal">
-includ</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">
-the </SPAN><I>Container Settings</I><SPAN STYLE="font-style: normal">
-area, where we can modify the heap of the application and, more
+<P LANG="en-GB" STYLE="font-style: normal">Once the initial
+deployment is ready, we can start configuring our application.</P>
+<P LANG="en-GB" STYLE="font-style: normal">On the left side menu,
+click on <I>Configuration</I>. This will bring you to the main
+configuration dashboard, where you can modify the properties of each
+element of the application: instances size, scaling, load balancing,
+databases linked to the application, etc.</P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="beanstalk_html_maf5c863.jpg" NAME="graphics4" ALIGN=LEFT WIDTH=643 HEIGHT=365 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">I</SPAN><SPAN STYLE="font-style: normal">f
+you click on the </SPAN><I>Software Configuration</I><SPAN STYLE="font-style: normal">
+entry you will </SPAN><SPAN STYLE="font-style: normal">access </SPAN><SPAN STYLE="font-style: normal">the
+form to set up container settings,</SPAN><SPAN STYLE="font-style: normal">
+where we can modify the heap of the application and, more
 importantly, provide JVM options:</SPAN></P>
-<P LANG="en-GB"><IMG SRC="beanstalk_html_m38789af8.jpg" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=519 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB"><IMG SRC="beanstalk_html_m72d0ea31.jpg" NAME="graphics9" ALIGN=LEFT WIDTH=643 HEIGHT=440 BORDER=0><BR><BR clear="left">
 </P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">We can use the JVM
-options to provide configuration settings to the application, like
-the JDBC url to our RDS instance. Remember that in a Play
-application, options provided via </SPAN><I>-D</I><SPAN STYLE="font-style: normal">
-flags in JVM  override settings in </SPAN><I>application.conf</I><SPAN STYLE="font-style: normal">.
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">We can use the
+</SPAN><I>Environment Properties </I><SPAN STYLE="font-style: normal">list</SPAN><SPAN STYLE="font-style: normal">
+to provide configuration settings to the application, like the JDBC
+url to our RDS instance. Remember that in a Play application, options
+provided via </SPAN><I>-D</I><SPAN STYLE="font-style: normal"> flags
+in JVM  override settings in </SPAN><I>application.conf</I><SPAN STYLE="font-style: normal">.
 For example, we can provide the following string:</SPAN></P>
 <P LANG="en-GB">    <I>-Ddb.default.url=&quot;&lt;jdbc url&gt;&quot;
 -Ddb.default.user=user -Ddb.default.password=password</I></P>
@@ -272,8 +304,10 @@ tell the application to use the RDS instance created in the previous
 chapter.</SPAN></P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">After applying the
 changes, the application will restart and we are ready to deploy the
-War file </SPAN><SPAN STYLE="font-style: normal">in Tomcat</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
-<H2 LANG="en-GB" CLASS="western">Deploying to Beanstalk</H2>
+</SPAN><I>War</I><SPAN STYLE="font-style: normal"> file </SPAN><SPAN STYLE="font-style: normal">in
+Tomcat</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
+<H2 LANG="en-GB" CLASS="western"><A NAME="1.3.Deploying to Beanstalk|outline"></A>
+Deploying to Beanstalk</H2>
 <P LANG="en-GB">Deploying to Beanstalk is a simple process. Beanstalk
 uses the concept of <I>Versions </I><SPAN STYLE="font-style: normal">to
 manage the application. Each new version is a new War file uploaded
@@ -287,18 +321,26 @@ Tomcat 7, first you need to rename the War generated by Play2War to
 <I>ROOT.war</I><SPAN STYLE="font-style: normal">. This will turn our
 sample application into the </SPAN><I>root</I><SPAN STYLE="font-style: normal">
 application of the container.</SPAN></P>
-<P LANG="en-GB">Once ready, select <I>Upload new version</I><SPAN STYLE="font-style: normal">
-in the Elastic Beanstalk dashboard. It opens a pop up window </SPAN><SPAN STYLE="font-style: normal">where
-all</SPAN><SPAN STYLE="font-style: normal"> the details of the
-version </SPAN><SPAN STYLE="font-style: normal">can be added, before
-</SPAN><SPAN STYLE="font-style: normal">deploy</SPAN><SPAN STYLE="font-style: normal">ment</SPAN><SPAN STYLE="font-style: normal">:</SPAN></P>
-<P LANG="en-GB"><IMG SRC="beanstalk_html_m284f9e40.jpg" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=529 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB">Once ready, go to the main <I>Dashboard</I><SPAN STYLE="font-style: normal">
+and </SPAN><SPAN STYLE="font-style: normal">select</SPAN> <I>Upload
+</I><I>and Deploy</I><SPAN STYLE="font-style: normal">:</SPAN></P>
+<P LANG="en-GB"><IMG SRC="beanstalk_html_m40eb554e.jpg" NAME="graphics10" ALIGN=LEFT WIDTH=643 HEIGHT=238 BORDER=0><BR><BR clear="left">
 </P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">A</SPAN><SPAN STYLE="font-style: normal">
+pop up window </SPAN><SPAN STYLE="font-style: normal">appears </SPAN><SPAN STYLE="font-style: normal">where
+</SPAN><SPAN STYLE="font-style: normal">we can upload the War file
+and add a label to our deployment, for example a version number:</SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="beanstalk_html_m1a52df54.jpg" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=320 BORDER=0><BR><BR clear="left">
+</P>
+<P LANG="en-GB"><SPAN STYLE="font-style: normal">As you may notice,
+the popup has a link to see </SPAN><I>All Versions</I><SPAN STYLE="font-style: normal">
+we have already deployed, allowing us to go back to a previously
+uploaded version if we want.</SPAN></P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">After pressing
-</SPAN><I>Upload and Deploy</I><SPAN STYLE="font-style: normal"> the
-War file is uploaded and the server is restarted to deploy the new
-release. This process takes a few minutes, as the War file being
-uploaded can be around 60Mb and the server needs to </SPAN><SPAN STYLE="font-style: normal">deploy
+</SPAN><I>Deploy</I><SPAN STYLE="font-style: normal"> the War file is
+uploaded and the server is restarted to deploy the new release. This
+process takes a few minutes, as the War file being uploaded can be
+around 60Mb and the server needs to </SPAN><SPAN STYLE="font-style: normal">deploy
 the War and </SPAN><SPAN STYLE="font-style: normal">restart after the
 upload finishes.</SPAN></P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">If everything works
@@ -306,24 +348,46 @@ as expected, a new version of the application </SPAN><SPAN STYLE="font-style: no
 shown in the dashboard. Otherwise, check the logs to find </SPAN><SPAN STYLE="font-style: normal">the
 reason </SPAN><SPAN STYLE="font-style: normal">why the application is
 not deploying </SPAN><SPAN STYLE="font-style: normal">properly</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">A common error when
+<P LANG="en-GB" STYLE="font-style: normal">A common error when
 deploying to Beanstalk is to have a mismatch between JDK versions in
 the development environment and the container. Beanstalk uses JDK
 1.6. If you create your War file using a newer version, like JDK 1.7,
 application deployment fails due to class version issues. Be aware of
-this limitation when generating the War file.</SPAN></P>
+this limitation when generating the War file.</P>
+<H2 LANG="en-GB" CLASS="western">Monitoring the application</H2>
+<P><SPAN LANG="en-GB">Beanstalk provides a lot of information to help
+monitor the application. You can check </SPAN><SPAN LANG="en-GB"><I>AWS
+Events</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+triggered by the application, receive notifications via </SPAN></SPAN><SPAN LANG="en-GB"><I>Alarms</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+and request the </SPAN></SPAN><SPAN LANG="en-GB"><I>Logs</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+of the Tomcat instance, all via the Dashboard of Beanstalk.</SPAN></SPAN></P>
+<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">One of the
+most useful reports is the </SPAN></SPAN><SPAN LANG="en-GB"><I>Monitoring</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
+menu, through which we access a dashboard with plenty of usage data
+related to the application, like CPU usage, network latency or
+network traffic.</SPAN></SPAN></P>
+<P> 
+</P>
+<P><IMG SRC="beanstalk_html_1a5b87fd.jpg" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=210 BORDER=0><BR><BR clear="left">
+</P>
+<P><SPAN LANG="en-GB">The image above shows the statistics collected
+by Beanstalk after a few requests to our application. The dashboard
+includes more graphs, </SPAN><SPAN LANG="en-GB">for example one</SPAN><SPAN LANG="en-GB">
+that show</SPAN><SPAN LANG="en-GB">s</SPAN><SPAN LANG="en-GB"> CPU
+usage across time, </SPAN><SPAN LANG="en-GB">and </SPAN><SPAN LANG="en-GB">other
+relevant values.</SPAN></P>
 <H2 LANG="en-GB" CLASS="western">Testing the application</H2>
 <P><SPAN LANG="en-GB">At this stage we have the application deployed
 and running. If we access the url provided by Beanstalk, </SPAN><SPAN LANG="en-GB">which
 in this example is
-<A HREF="http://default-environment-5kb8hjacsg.elasticbeanstalk.com/">http://default-environment-5kb8hjacsg.elasticbeanstalk.com/</A>,
+</SPAN><A HREF="http://default-environment-5kb8hjacsg.elasticbeanstalk.com/">http://default-environment-5kb8hjacsg.elasticbeanstalk.com/</A><SPAN LANG="en-GB">,
 we can see the </SPAN><SPAN LANG="en-GB">homepage</SPAN><SPAN LANG="en-GB">:
 </SPAN>
 </P>
-<P><BR><BR>
+<P LANG="en-GB"><BR><BR>
 </P>
-<P><IMG SRC="beanstalk_html_m1616ca6c.jpg" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=252 BORDER=0><BR><BR clear="left"><SPAN LANG="en-GB">Beanstalk
-has full access to all AWS services. </SPAN><SPAN LANG="en-GB">This
+<P><IMG SRC="beanstalk_html_m1616ca6c.png" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=252 BORDER=0><SPAN LANG="en-GB"><BR><BR clear="left">
+Beanstalk has full access to all AWS services. </SPAN><SPAN LANG="en-GB">This
 means that you can extend your application as  required, usually with
 minimal effort as AWS provides convenient interfaces between
 Beanstalk and other AWS components.</SPAN></P>
@@ -331,12 +395,12 @@ Beanstalk and other AWS components.</SPAN></P>
 </SPAN><SPAN LANG="en-GB">domain linked to your application </SPAN><SPAN LANG="en-GB">(which
 is not very user friendly) </SPAN><SPAN LANG="en-GB">and use your own
 custom domain you can follow the steps described in the
-<A HREF="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customdomains.html">documentation</A>,
-which </SPAN><SPAN LANG="en-GB">use</SPAN><SPAN LANG="en-GB"> <A HREF="http://aws.amazon.com/route53/">Amazon
-Route 53</A> </SPAN><SPAN LANG="en-GB">to provide this mapping.</SPAN><SPAN LANG="en-GB">
-</SPAN>
+</SPAN><A HREF="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customdomains.html">documentation</A><SPAN LANG="en-GB">,
+which </SPAN><SPAN LANG="en-GB">use</SPAN><SPAN LANG="en-GB"> </SPAN><A HREF="http://aws.amazon.com/route53/">Amazon
+Route 53</A><SPAN LANG="en-GB"> </SPAN><SPAN LANG="en-GB">to provide
+this mapping.</SPAN><SPAN LANG="en-GB"> </SPAN>
 </P>
-<H2 CLASS="western"><SPAN LANG="en-GB">Next steps</SPAN></H2>
+<H2 LANG="en-GB" CLASS="western">Next steps</H2>
 <P LANG="en-GB">This concludes the article about deploying a Play
 Framework application in Amazon AWS. Through it we have seen how to
 create a Play Framework application that uses Amazon AWS services,

@@ -7,7 +7,7 @@
 	<META NAME="AUTHOR" CONTENT="pvillega ">
 	<META NAME="CREATED" CONTENT="20130618;20432000">
 	<META NAME="CHANGEDBY" CONTENT="pvillega ">
-	<META NAME="CHANGED" CONTENT="20130623;22045500">
+	<META NAME="CHANGED" CONTENT="20130731;21193900">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
@@ -33,21 +33,119 @@
 	</STYLE>
 </HEAD>
 <BODY LANG="en-IE" DIR="LTR">
-<H1 LANG="en-GB" CLASS="western">Amazon AWS, Ansible and Play
-Framework</H1>
-<P LANG="en-GB"><A HREF="http://aws.amazon.com/">Amazon AWS</A>
-provides an excellent platform to manage your applications. It
-reduces the amount of time you have to spend on syadmin tasks and
-turns scaling the application into something simple. <A HREF="http://www.playframework.com/">Play
-framework</A> is a modern Java framework that unites the productivity
-of Ruby on Rails with the reliability and performance of the Java
-Virtual Machine. <A HREF="http://www.ansibleworks.com/docs/">Ansible</A>
-is an excellent tool to manage your servers with minimal effort,
-using plain text files to set them up and providing all the
-capabilities you have come to expect from a DevOps tool.</P>
-<P LANG="en-GB">This article shows how to use these 3 modern
-technologies to build, deploy and scale a web application deployed in
-AWS. The sample code and the Ansible scripts are available in <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>.</P>
+<H1 LANG="en-GB" CLASS="western">Visionary: enter the Reactive World</H1>
+<P><SPAN LANG="en-GB">Welcome</SPAN><SPAN LANG="en-GB">. You are
+creating a new product that will reshape the world. But your project
+has to be perfect. </SPAN><SPAN LANG="en-GB">N</SPAN><SPAN LANG="en-GB">o
+downtime is acceptable, user experience must be unparalleled. You
+want everything a system can be: resilient, scalable, interactive. </SPAN>
+</P>
+<P><SPAN LANG="en-GB">Rings a bell, </SPAN><SPAN LANG="en-GB">doesn't
+it?</SPAN><SPAN LANG="en-GB"> Quite the common idealistic approach
+that makes so many engineers cringe. Idealists that want everything
+without knowing the limitations </SPAN><SPAN LANG="en-GB">a system
+has</SPAN><SPAN LANG="en-GB">. Asking for the impossible. Or do they?</SPAN></P>
+<P><SPAN LANG="en-GB">As technology advances, things that were
+thought impossible as suddenly run-of-the-mill occurrences. Remember
+when the </SPAN><A HREF="http://en.wikipedia.org/wiki/C10k_problem">C10k
+problem</A><SPAN LANG="en-GB"> seemed unsolvable? Fortunately for us,
+developers and visionaries, asking for resilient, scalable and
+interactive application is no longer a dream. </SPAN><SPAN LANG="en-GB">In
+fact, as the </SPAN><A HREF="http://www.reactivemanifesto.org/">Reactive
+Manisfesto</A><SPAN LANG="en-GB"> </SPAN><SPAN LANG="en-GB">states,
+the very opposite is true.</SPAN></P>
+<P><SPAN LANG="en-GB">In this series of article</SPAN><SPAN LANG="en-GB">s</SPAN><SPAN LANG="en-GB">
+we want to show one way of tackling this problem. </SPAN><SPAN LANG="en-GB">We
+will leverage modern technologies and platforms, like</SPAN><SPAN LANG="en-GB">
+</SPAN><A HREF="http://www.playframework.com/">Play framework</A><SPAN LANG="en-GB">
+</SPAN><SPAN LANG="en-GB">and</SPAN><SPAN LANG="en-GB"> </SPAN><A HREF="http://aws.amazon.com/">Amazon
+AWS</A><SPAN LANG="en-GB">, </SPAN><SPAN LANG="en-GB">to build a
+sample application that follows these principles: resilience,
+scalability and interactivity. </SPAN>
+</P>
+<P LANG="en-GB">Through the series we will show you how to create the
+application, how to deploy it with minimal friction into Amazon AWS,
+and how to configure the platform so the application scales
+automatically thus providing the user with a smooth experience and
+avoiding downtime due to server errors. 
+</P>
+<P LANG="en-GB">We hope that this helps to inspire you when
+developing your next application. The sample we develop in here is a
+basic one, but it is a foundation stone you can use to grow your own
+vision. To that aim, we provide all the source and scripts via
+<A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>,
+so you can adapt them as you need.  
+</P>
+<P LANG="en-GB">Let's start.</P>
+<H1 LANG="en-GB" CLASS="western">Steps to Building a Reactive
+Application</H1>
+<P LANG="en-GB">This article takes you through most of the steps
+required to build a reactive application using Play Framework and
+Amazon AWS. All the explanations relate to the sample code provided
+in the <A HREF="https://github.com/pvillega/amazon-ansible-play-article">Github</A>
+repository, any details not discussed in the article may be
+understood by checking the code.</P>
+<P LANG="en-GB">There are several reasons why you should choose the
+technologies we use here for any of your projects:</P>
+<UL>
+	<LI><P><SPAN LANG="en-GB"><A HREF="http://aws.amazon.com/">Amazon
+	AWS</A> provides an excellent platform to manage your applications.
+	</SPAN><SPAN LANG="en-GB">It reduces the amount of time you have to
+	spend on syadmin tasks and turns scaling the application into
+	something simple</SPAN><SPAN LANG="en-GB">. </SPAN>
+	</P>
+	<LI><P><SPAN LANG="en-GB"><A HREF="http://www.playframework.com/">Play
+	framework</A> is a modern Java framework that unites the
+	productivity of Ruby on Rails with the reliability and performance
+	of the Java Virtual Machine. </SPAN>
+	</P>
+	<LI><P><SPAN LANG="en-GB"><A HREF="http://www.ansibleworks.com/docs/">Ansible</A>
+	is an excellent tool to manage your servers with minimal effort,
+	using plain text files </SPAN><SPAN LANG="en-GB">to set them up and
+	providing all the capabilities you have come to expect from a DevOps
+	tool</SPAN><SPAN LANG="en-GB">.</SPAN></P>
+</UL>
+<P LANG="en-GB">We hope that through this example you get to know
+these tools and get a glimpse on how they may benefit your present
+and future deployments.</P>
+<P LANG="en-GB">Before starting with the example itself, let's do a
+small exercise of imagination. You want to start coding your
+application, and to that aim you sketch a project plan with some
+generic steps to follow:</P>
+<OL>
+	<LI><P LANG="en-GB">Setup a development environment, including
+	Amazon AWS services you may use</P>
+	<LI><P LANG="en-GB">Develop the code</P>
+	<LI><P LANG="en-GB">Setup a staging area (development) in Amazon AWS</P>
+	<LI><P LANG="en-GB">Setup a test environment in Amazon AWS</P>
+	<LI><P LANG="en-GB">Setup a production environment in Amazon AWS</P>
+	<LI><P LANG="en-GB">Launch the application</P>
+	<LI><P LANG="en-GB">Scale it as the demand grows</P>
+	<LI><P LANG="en-GB">Profit!</P>
+</OL>
+<P LANG="en-GB">In the article, we focus mainly in points 1, 2, 3 and
+7. Be aware that the instructions for point 3 can easily be
+replicated for point 4 and 5, so in fact we can say we are also
+covering these points. We would like to explain you the secret behind
+point 8, but we have been forbidden to do that.</P>
+<P><SPAN LANG="en-GB">This first chapter </SPAN><SPAN LANG="en-GB">focusses
+mostly in developing the code (point 2) and a partial setup of the
+development environment (point 1). </SPAN><SPAN LANG="en-GB">We start
+by </SPAN><A HREF="#3.1.Description of Technologies|outline">describing
+the technologies</A><SPAN LANG="en-GB"> involved in the application
+and how they fit each other. We  continue by giving step by step
+instructions on how to </SPAN><A HREF="#3.2.Constructing the Application|outline">construct
+the application</A><SPAN LANG="en-GB">, </SPAN><SPAN LANG="en-GB">and
+then we do</SPAN><SPAN LANG="en-GB"> a </SPAN><A HREF="#3.3.Try the Application|outline">test
+run of the deployed application</A><SPAN LANG="en-GB">. Finally, we
+talk about </SPAN><A HREF="#3.4.Configuration for Other Environments|outline">configuring
+the application for other environments</A><SPAN LANG="en-GB">. </SPAN>
+</P>
+<P LANG="en-GB">Although the source code we create uses DynamoDB, and
+you need to create some tables in it to be able to run the
+application, we have decided to group all the Amazon AWS
+configuration in the next chapter so we can focus a bit more on the
+Play side of the project in the current one.</P>
 <H1 LANG="en-GB" CLASS="western">Building the sample Play application</H1>
 <P LANG="en-GB">The first step is to create our Play Framework
 application. The purpose is to create a sample with basic
@@ -62,7 +160,8 @@ requiring authentication by the user. Photos' details are loaded via
 a background task and stored in <A HREF="http://aws.amazon.com/dynamodb/">DynamoD</A><A HREF="http://aws.amazon.com/dynamodb/">B</A>,
 while user data is stored in a MySQL database provided by <A HREF="http://aws.amazon.com/rds/">Amazon
 RDS</A>.</P>
-<H2 LANG="en-GB" CLASS="western">Description of Technologies</H2>
+<H2 LANG="en-GB" CLASS="western"><A NAME="3.1.Description of Technologies|outline"></A>
+Description of Technologies</H2>
 <P LANG="en-GB">This section summarizes the most relevant components
 used to build the application. The purpose is to familiarize
 ourselves with the different elements we can find when browsing the
@@ -155,7 +254,7 @@ tasks (in this scenario, querying the Flickr API to obtain data on a
 few hundred images) without any performance impact in the processing
 of Http requests, as they run in different execution contexts.</SPAN></P>
 <H3 LANG="en-GB" CLASS="western">WebJars</H3>
-<P><A HREF="http://www.webjars.org/">WebJars</A><SPAN LANG="en-GB">
+<P><A HREF="http://www.webjars.org/">Web</A><A HREF="http://www.webjars.org/">J</A><A HREF="http://www.webjars.org/">ars</A><SPAN LANG="en-GB">
 are client side libraries, like </SPAN><A HREF="http://jquery.com/">Jquery</A><SPAN LANG="en-GB">,
 packaged as Jars. This has two big benefits. First, we can manage the
 dependencies in the client side libraries easily, avoiding clashes
@@ -165,9 +264,10 @@ tools like Ivy, Maven or SBT, as we are working with Jars.</SPAN></P>
 <H3 LANG="en-GB" CLASS="western">Ebean</H3>
 <P><A HREF="http://www.avaje.org/">Ebean</A><SPAN LANG="en-GB"> is a
 JPA compliant ORM, used by Play Framework as the default ORM. Being
-JPA compliant, in the application we define our database model as
-simple POJOs with annotations and the system will generate the
-necessary queries to retrieve the data from the database.</SPAN></P>
+JPA </SPAN><SPAN LANG="en-GB">compliant, in the application we define
+our database model as simple POJOs with annotations and the system
+will generate the necessary queries to retrieve the data from the
+database.</SPAN></P>
 <P LANG="en-GB">Ebean provides advanced capabilities, like automatic
 ddl generation based on the application model, but we are not using
 them in this project.</P>
@@ -224,14 +324,15 @@ automatically, letting you focus on development. </SPAN>
 tags and images </SPAN><SPAN LANG="en-GB">obtained from Flickr. The
 data is all text </SPAN><SPAN LANG="en-GB">(String)</SPAN><SPAN LANG="en-GB">
 and includes </SPAN><SPAN LANG="en-GB">information like </SPAN><SPAN LANG="en-GB">the
-name of a tag or the url of an image. By using DynamoDB we can later
-on extend the model as required </SPAN><SPAN LANG="en-GB">and</SPAN><SPAN LANG="en-GB">
+name of a tag or the url of an image. </SPAN><SPAN LANG="en-GB">By
+using DynamoDB we can later on extend the model as required </SPAN><SPAN LANG="en-GB">and</SPAN><SPAN LANG="en-GB">
 with minimal effort, adding new </SPAN><SPAN LANG="en-GB">fields</SPAN><SPAN LANG="en-GB">
 like how many users </SPAN><SPAN LANG="en-GB">vote</SPAN><SPAN LANG="en-GB">
 </SPAN><SPAN LANG="en-GB">for </SPAN><SPAN LANG="en-GB">a particular
 image or how many time</SPAN><SPAN LANG="en-GB">s</SPAN><SPAN LANG="en-GB">
 has a particular tag become popular.</SPAN></P>
-<H2 LANG="en-GB" CLASS="western">Constructing the Application</H2>
+<H2 LANG="en-GB" CLASS="western"><A NAME="3.2.Constructing the Application|outline"></A>
+Constructing the Application</H2>
 <P><SPAN LANG="en-GB">In this section we describe how to build the
 application itself. Instead of describing every single step in
 detail, we focus on the main areas of the website and what is needed
@@ -248,7 +349,7 @@ specification.</P>
 <P LANG="en-GB">    <SPAN STYLE="font-style: normal">$</SPAN><I>play</I></P>
 <P LANG="en-GB" STYLE="font-style: normal">in a terminal window. You
 should get an output like this:</P>
-<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_m56cc6ad4.png" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=317 BORDER=0 ><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_m56cc6ad4.png" NAME="graphics1" ALIGN=LEFT WIDTH=643 HEIGHT=317 BORDER=0><BR><BR clear="left">
 </P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">It s</SPAN><SPAN STYLE="font-style: normal">how</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
 that Play 2.1.1 has been installed and, in red, that the current
@@ -306,7 +407,7 @@ with output as follows:</SPAN></SPAN></P>
 that address displays the default application:</P>
 <P STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_m2dcc88f8.png" NAME="graphics3" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
 </P>
-<H3 CLASS="western"><SPAN LANG="en-GB">Add dependencies</SPAN></H3>
+<H3 LANG="en-GB" CLASS="western">Add dependencies</H3>
 <P><SPAN LANG="en-GB">Now that we have a running project, the </SPAN><SPAN LANG="en-GB">next</SPAN><SPAN LANG="en-GB">
 step </SPAN><SPAN LANG="en-GB">is</SPAN><SPAN LANG="en-GB"> to add
 the external dependencies of our application. As mentioned above, we
@@ -314,12 +415,13 @@ the external dependencies of our application. As mentioned above, we
 </SPAN><SPAN LANG="en-GB">Web</SPAN><SPAN LANG="en-GB">J</SPAN><SPAN LANG="en-GB">ars,
 Amazon AWS, MySQL and other </SPAN><SPAN LANG="en-GB">components</SPAN><SPAN LANG="en-GB">.
 For Play to recognize them, we have to define these dependencies in
-SBT, so the corresponding jars can be retrieved.</SPAN></P>
+SBT, so the </SPAN><SPAN LANG="en-GB">corresponding jars can be
+retrieved.</SPAN></P>
 <P><SPAN LANG="en-GB">The file that defines the dependencies is
 located at </SPAN><SPAN LANG="en-GB"><I>project/Build.scala</I></SPAN><SPAN LANG="en-GB">.
 Dependencies are usually retrieved from standard repositories like
-<A HREF="http://search.maven.org/">Maven Central</A>, but in some
-cases we want to pull them from other locations </SPAN><SPAN LANG="en-GB">a</SPAN><SPAN LANG="en-GB">s
+</SPAN><A HREF="http://search.maven.org/">Maven Central</A><SPAN LANG="en-GB">,
+but in some cases we want to pull them from other locations </SPAN><SPAN LANG="en-GB">a</SPAN><SPAN LANG="en-GB">s
 </SPAN><SPAN LANG="en-GB">the files are not stored in Maven Central</SPAN><SPAN LANG="en-GB">.
 This means that we have to define both </SPAN><SPAN LANG="en-GB"><I>dependencies
 </I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">and
@@ -332,15 +434,15 @@ defined as a sequence in the file. </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE=
 follow the format:</SPAN></SPAN></P>
 <P>    “<SPAN LANG="en-GB"><I>&lt;group&gt;” % “&lt;artifact&gt;”
 % “&lt;version&gt;”</I></SPAN></P>
-<P STYLE="font-style: normal"><SPAN LANG="en-GB">For example, the
-dependency for Webjars is defined as:</SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">For example, the
+dependency for Webjars is defined as:</P>
 <P STYLE="font-style: normal">    <SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;org.webjars&quot;</SPAN></SPAN><SPAN LANG="en-GB">
 </SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB">%%</SPAN></FONT><SPAN LANG="en-GB">
 </SPAN><SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;webjars-play&quot;</SPAN></SPAN><SPAN LANG="en-GB">
 </SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB">%</SPAN></FONT><SPAN LANG="en-GB">
 </SPAN><SPAN LANG="en-GB"><SPAN STYLE="background: #fff0f0">&quot;2.1.0-2&quot;</SPAN></SPAN></P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">While the
-dependency for MySQL is defined as:</SPAN></SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">While the dependency for
+MySQL is defined as:</P>
 <P>    <SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;mysql&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 </SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;mysql-connector-java&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
@@ -358,13 +460,13 @@ is defined as:</SPAN></SPAN></P>
 </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;bootstrap&quot;</SPAN></SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 </SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">%</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;2.3.2&quot;</SPAN></SPAN></SPAN></P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">Play provides
-some keywords to define common dependencies for Play projects, that
-way instead of adding the full structure we can use the keyword to
-define that dependency. For example, to import Ebean we can write:</SPAN></SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">Play provides some
+keywords to define common dependencies for Play projects, that way
+instead of adding the full structure we can use the keyword to define
+that dependency. For example, to import Ebean we can write:</P>
 <P>    <SPAN LANG="en-GB"><I>javaEbean</I></SPAN></P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">and Play will
-resolve that to the correct dependency when compiling.</SPAN></SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">and Play will resolve that
+to the correct dependency when compiling.</P>
 <P><SPAN LANG="en-GB"><I>Resolvers</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 are </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">location
 where we can find jars that can de used as dependencies. </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">A
@@ -373,13 +475,13 @@ readable name used for developers to identify the repository, while
 the url is the location where files not available in Maven Central
 may be located. </SPAN></SPAN>
 </P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">An example of
-a resolver is:</SPAN></SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">An example of a resolver
+is:</P>
 <P>    <SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">resolvers
 </SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">+=</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 </SPAN></SPAN><FONT COLOR="#b00060"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><B>Resolver</B></SPAN></SPAN></FONT><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">url</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">(</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;play-easymail
 (release)&quot;</SPAN></SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
-url</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">(</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;<A HREF="http://joscha.github.com/">http://joscha.github.com</A>”</SPAN></SPAN></SPAN><SPAN LANG="en-GB">))(Resolver.ivyStylePatterns)</SPAN></P>
+url</SPAN></SPAN><FONT COLOR="#303030"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">(</SPAN></SPAN></FONT><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">&quot;</SPAN></SPAN></SPAN><A HREF="http://joscha.github.com/">http://joscha.github.com</A><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal"><SPAN STYLE="background: #fff0f0">”</SPAN></SPAN></SPAN><SPAN LANG="en-GB">))(Resolver.ivyStylePatterns)</SPAN></P>
 <P><SPAN LANG="en-GB">This resolver contains jars for </SPAN><SPAN LANG="en-GB"><I>play-easymail</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 which are stored in a Github repository. When compiling, SBT will
 check this repository for files it has not been able to locate in
@@ -470,11 +572,11 @@ layout. There are several files copied over , including images, views
 and controllers. Only the most relevant elements are discussed in
 this section, </SPAN><SPAN LANG="en-GB">the remainder can be checked
 in the source code we provide</SPAN><SPAN LANG="en-GB">.</SPAN></P>
-<H4 CLASS="western"><SPAN LANG="en-GB">Configuration</SPAN></H4>
+<H4 LANG="en-GB" CLASS="western">Configuration</H4>
 <P LANG="en-GB"><A NAME="__DdeLink__1039_1353322844"></A>The first
 component we talk about is the configuration. Configuration files for
 Play Authenticate are located in two folders, <I>conf </I><SPAN STYLE="font-style: normal">
-and </SPAN><I>conf/play-authenticate.</I></P>
+and </SPAN><I>conf/play-authenticate</I><I>.</I></P>
 <P LANG="en-GB" STYLE="font-style: normal">The folder 
 <I>conf/play-authenticate</I> contains configuration specific to
 components of Play Authenticate. For example, the file <I>deadbolt.conf</I>
@@ -513,8 +615,8 @@ English, but you could easily create a </SPAN><I>messages.es</I><SPAN STYLE="fon
 file and provide </SPAN><SPAN STYLE="font-style: normal">a </SPAN><SPAN STYLE="font-style: normal">
 Spanish translation for the website, including all the Play
 Authenticate screens.</SPAN></P>
-<H4 LANG="en-GB" CLASS="western"><A NAME="__DdeLink__1043_1353322844"></A>
-<SPAN STYLE="font-style: normal">Model</SPAN></H4>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><A NAME="__DdeLink__1043_1353322844"></A>
+Model</H4>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The folder
 </SPAN></SPAN><SPAN LANG="en-GB"><I>app/models</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 contains Ebean entities used by Play Authenticate to store data on
@@ -525,12 +627,14 @@ a MySQL database.</SPAN></SPAN></P>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">An example of
 the files included is </SPAN></SPAN><SPAN LANG="en-GB"><I>UserPermission</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,
 a class that stores the access levels available in the system:</SPAN></SPAN></P>
-<P><BR><BR>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
 </P>
 <DIV ID="preview" DIR="LTR">
-	<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TABLE WIDTH=907 CELLPADDING=2 CELLSPACING=0>
+		<COL WIDTH=20>
+		<COL WIDTH=879>
 		<TR>
-			<TD STYLE="border: none; padding: 0cm">
+			<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 				<PRE CLASS="western"> 1
  2
  3
@@ -555,7 +659,7 @@ a class that stores the access levels available in the system:</SPAN></SPAN></P>
 22
 23</PRE>
 			</TD>
-			<TD STYLE="border: none; padding: 0cm">
+			<TD WIDTH=879 STYLE="border: none; padding: 0cm">
 				<PRE CLASS="western"><FONT COLOR="#505050"><B>@Entity</B></FONT>
 <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>UserPermission</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> Model <FONT COLOR="#008000"><B>implements</B></FONT> Permission <FONT COLOR="#303030">{</FONT>
         <FONT COLOR="#808080">/**</FONT>
@@ -596,21 +700,23 @@ the database.</SPAN></SPAN></P>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The default
 model classes included shouldn't be extended, as they are used by
 Play Authenticate and any modification may cause issues in the
-authentication and authorization system. But feel free to use them as
-templates for your own model classes.</SPAN></SPAN></P>
-<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">Controllers</SPAN></H4>
+authentication and authorization system. But feel free </SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">to
+use them as templates for your own model classes.</SPAN></SPAN></P>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal">Controllers</H4>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">Play
 Authenticate provides some controllers in the sample application. The
 most relevant is </SPAN></SPAN><SPAN LANG="en-GB"><I>app/controllers/Application.java</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">,
 which manages the main urls of the webapp. Remember that in a Play
 Framework application the mapping between url and controller is
 defined inside </SPAN></SPAN><SPAN LANG="en-GB"><I>conf/routes</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">.</SPAN></SPAN></P>
-<P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">The
-Application controller is a good example on how to secure methods. An
-extract of its contents follows:</SPAN></SPAN></P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<P LANG="en-GB" STYLE="font-style: normal">The Application controller
+is a good example on how to secure methods. An extract of its
+contents follows:</P>
+<TABLE WIDTH=707 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=679>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -638,7 +744,7 @@ extract of its contents follows:</SPAN></SPAN></P>
 25
 26</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=679 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>Application</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> Controller <FONT COLOR="#303030">{</FONT>
 
         <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> <FONT COLOR="#008000"><B>final</B></FONT> String FLASH_MESSAGE_KEY <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;message&quot;</SPAN><FONT COLOR="#303030">;</FONT>
@@ -668,7 +774,7 @@ extract of its contents follows:</SPAN></SPAN></P>
 		</TD>
 	</TR>
 </TABLE>
-<P><BR><BR>
+<P LANG="en-GB" STYLE="font-style: normal"><BR><BR>
 </P>
 <P><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">If you check
 line 17, you will see that we are restricting access to the </SPAN></SPAN><SPAN LANG="en-GB"><I>profile</I></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
@@ -676,7 +782,7 @@ method so only authenticated users can access it.  </SPAN></SPAN><SPAN LANG="en-
 other methods are not restricted, so any user could potentially
 access them and obtain a response. </SPAN></SPAN>
 </P>
-<H4 CLASS="western"><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">WebJars</SPAN></SPAN></H4>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal">WebJars</H4>
 <P LANG="en-GB">One change over the default layout of Play
 Authenticate is how we include the Bootstrap files. As mentioned
 several times, we use WebJars to add Bootstrap in the application.
@@ -685,7 +791,7 @@ load it.</P>
 <P LANG="en-GB">This is achieved by editing the file
 <I>app/views/main/scala/html</I><SPAN STYLE="font-style: normal"> and
 adding the following lines to load the relevant Css and Javascript:</SPAN></P>
-<PRE LANG="en-GB" CLASS="western" STYLE="border: 1px solid #808080; padding: 0.05cm; line-height: 125%"><SPAN STYLE="background: #ffffff"><FONT COLOR="#007000"><SPAN STYLE="font-style: normal">@* Retrieve css/Javascript dependencies via WebJars *@</SPAN></FONT></SPAN>
+<PRE LANG="en-GB" CLASS="western" STYLE="border: 1px solid #808080; padding: 0.05cm; font-style: normal; line-height: 125%"><FONT COLOR="#007000"><SPAN STYLE="background: #ffffff">@* Retrieve css/Javascript dependencies via WebJars *@</SPAN></FONT>
 <SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;link</FONT> <FONT COLOR="#0000c0">rel=</FONT><SPAN STYLE="background: #fff0f0">'stylesheet' </SPAN><FONT COLOR="#0000c0">href=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;css/bootstrap.min.css&quot;))'</SPAN><FONT COLOR="#007000">&gt;</FONT></SPAN>
 <SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;script </FONT><FONT COLOR="#0000c0">type=</FONT><SPAN STYLE="background: #fff0f0">'text/javascript'</SPAN> <FONT COLOR="#0000c0">src=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;jquery.min.js&quot;))'</SPAN><FONT COLOR="#007000">&gt;&lt;/script&gt;</FONT></SPAN>
 <SPAN STYLE="background: #ffffff"><FONT COLOR="#007000">&lt;script </FONT><FONT COLOR="#0000c0">type=</FONT><SPAN STYLE="background: #fff0f0">'text/javascript'</SPAN> <FONT COLOR="#0000c0">src=</FONT><SPAN STYLE="background: #fff0f0">'@routes.WebJarAssets.at(WebJarAssets.locate(&quot;js/bootstrap.min.js&quot;))'</SPAN><FONT COLOR="#007000">&gt;&lt;/script&gt;</FONT></SPAN></PRE><P LANG="en-GB">
@@ -698,7 +804,7 @@ which means that we can also use it in our application.</P>
 <H3 LANG="en-GB" CLASS="western">Connect to Amazon AWS</H3>
 <P LANG="en-GB">Now that we have the layout and the authentication
 component integrated, it is time to use services from Amazon AWS.</P>
-<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">Configuration</SPAN></H4>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal">Configuration</H4>
 <P LANG="en-GB">To be able to connect to many AWS services from a
 Java application you need the <A HREF="http://aws.amazon.com/sdkforjava/">Amazon
 AWS SDK</A> jar. In the dependencies section we added that jar via
@@ -712,16 +818,17 @@ to do so, it requires your Amazon access key and secret key as well
 as the endpoint for the services. You can obtain your access and
 secret key</FONT><FONT COLOR="#303030">s</FONT><FONT COLOR="#303030">
 </FONT><FONT COLOR="#303030">from</FONT><FONT COLOR="#303030"> your
-<A HREF="https://console.aws.amazon.com/iam/home?#security_credential">Amazon
-AWS Management Console.</A> </FONT>
+</FONT><A HREF="https://console.aws.amazon.com/iam/home?#security_credential">Amazon
+AWS Management Console.</A><FONT COLOR="#303030"> </FONT>
 </P>
-<P LANG="en-GB"><FONT COLOR="#303030">The <A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAMBestPractices.html">best
-practice</A> regarding your keys is to use AWS Identity and Access
-Management (IAM) roles to create limited roles with access to only a
-component, for example a role that can only read from S3. This way,
-even if your keys are leaked, you limit the amount of data an
-attacker may retrieve.  The specific steps on securing the users are
-outside the scope of this chapter, but the <A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html">documentation</A>
+<P LANG="en-GB"><FONT COLOR="#303030">The </FONT><A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAMBestPractices.html">best
+practice</A><FONT COLOR="#303030"> regarding your keys is to use AWS
+Identity and Access Management (IAM) roles to create limited roles
+with access to only a component, for example a role that can only
+read from S3. This way, even if your keys are leaked, you limit the
+amount of data an attacker may retrieve.  The specific steps on
+securing the users are outside the scope of this chapter, but the
+</FONT><A HREF="http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html">documentation</A><FONT COLOR="#303030">
 for IAM is very detailed, and </FONT><FONT COLOR="#303030">it shows
 the steps you need to follow to create the roles you need</FONT><FONT COLOR="#303030">.</FONT></P>
 <P LANG="en-GB"><FONT COLOR="#303030">In our sample application the
@@ -740,8 +847,8 @@ is set to connect to DynamoDB in Europe
 configuration for our Amazon RDS connection details. As Amazon RDS
 gives access to the endpoint of the machine, you can easily generate
 a jdbc url to connect to it.</P>
-<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">MySQL
-Model</SPAN></H4>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal">MySQL
+Model</H4>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">At this point we
 have the jars and the configuration. Now we can define the database
 model. </SPAN><SPAN STYLE="font-style: normal">In this sample
@@ -757,7 +864,7 @@ data</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">Having the model
 defined in our code, we need to create the corresponding tables in
 the database.</SPAN><SPAN STYLE="font-style: normal"> Play Framework
-provides the <A HREF="http://www.playframework.com/documentation/2.1.1/Evolutions">Evolutions</A>
+provides the </SPAN><A HREF="http://www.playframework.com/documentation/2.1.1/Evolutions"><SPAN STYLE="font-style: normal">Evolutions</SPAN></A><SPAN STYLE="font-style: normal">
 system to keep the database schema up to date </SPAN><SPAN STYLE="font-style: normal">automatically</SPAN><SPAN STYLE="font-style: normal">.
 Evolutions </SPAN><SPAN STYLE="font-style: normal">uses</SPAN><SPAN STYLE="font-style: normal">
 SQL file</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
@@ -779,7 +886,7 @@ configuration files, we don't have to worry about configuring MySQL
 tables as Play Framework takes care of that using the evolution
 script</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">s</SPAN></SPAN><SPAN LANG="en-GB"><SPAN STYLE="font-style: normal">
 we provide.</SPAN></SPAN></P>
-<H4 LANG="en-GB" CLASS="western"><SPAN STYLE="font-style: normal">DynamoDB</SPAN></H4>
+<H4 LANG="en-GB" CLASS="western" STYLE="font-style: normal">DynamoDB</H4>
 <P LANG="en-GB">As mentioned before, in the sample application we use
 DynamoDB to store metadata of Flickr images. The steps to configure
 DynamoDB in Amazon AWS are shown in the next article, where we
@@ -792,9 +899,11 @@ facilitate the interaction between our Java code and this NoSQL
 database, Amazon AWS SDK provides some data modelling tools that map
 the data stored in a table to a POJO. One example of such mapping is
 the following file:</P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=515 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=487>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -812,7 +921,7 @@ the following file:</P>
 15
 16</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=487 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"><FONT COLOR="#505050"><B>@DynamoDBTable</B></FONT><FONT COLOR="#303030">(</FONT>tableName <FONT COLOR="#303030">=</FONT> <SPAN STYLE="background: #fff0f0">&quot;tag&quot;</SPAN><FONT COLOR="#303030">)</FONT>
 <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>Tag</B></FONT> <FONT COLOR="#303030">{</FONT>
 
@@ -858,9 +967,11 @@ class has been added to <I>app/service/DynamoDBService </I><SPAN STYLE="font-sty
 provides methods to load and save data to DynamoDB. The service class
 is a singleton implemented as an Enum, and a partial view of its
 implementation follows:</SPAN></P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=779 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=751>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -892,7 +1003,7 @@ implementation follows:</SPAN></P>
 29
 30</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=751 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>enum</B></FONT> DynamoDbService <FONT COLOR="#303030">{</FONT>
     INSTANCE<FONT COLOR="#303030">;</FONT>
 
@@ -927,7 +1038,7 @@ implementation follows:</SPAN></P>
 	</TR>
 </TABLE>
 <P LANG="en-GB">Using an Enum as the implementation of a Singleton is
-currently considered <A HREF="Using an Enum as the implementation of a Singleton is currently considered the best way.">the
+currently considered <A HREF="../Using%20an%20Enum%20as%20the%20implementation%20of%20a%20Singleton%20is%20currently%20considered%20the%20best%20way.%20">the
 best way</A> to implement Singletons. As you can see on line 14, the
 constructor of the Enum initializes the connection to DynamoDB, using
 the Amazon AWS credentials (access key, secret key and endpoint). 
@@ -956,11 +1067,13 @@ API</SPAN><SPAN STYLE="font-style: normal"> when it receives a
 message. The </SPAN><SPAN STYLE="font-style: normal">actor </SPAN><SPAN STYLE="font-style: normal">ignore</SPAN><SPAN STYLE="font-style: normal">s</SPAN><SPAN STYLE="font-style: normal">
 the type of message received, any message will trigger the collection
 </SPAN><SPAN STYLE="font-style: normal">of images</SPAN><SPAN STYLE="font-style: normal">.</SPAN></P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">The implementation
-is as follows:</SPAN></P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<P LANG="en-GB" STYLE="font-style: normal">The implementation is as
+follows:</P>
+<TABLE WIDTH=931 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=903>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -1010,7 +1123,7 @@ is as follows:</SPAN></P>
 47
 48</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=903 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"><FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>class</B></FONT> <FONT COLOR="#b00060"><B>RetrieveTagsAndPhotos</B></FONT> <FONT COLOR="#008000"><B>extends</B></FONT> UntypedActor <FONT COLOR="#303030">{</FONT>
 
     <FONT COLOR="#008000"><B>final</B></FONT> String key <FONT COLOR="#303030">=</FONT> Play<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">application</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">configuration</FONT><FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;flickr.key&quot;</SPAN><FONT COLOR="#303030">);</FONT>
@@ -1107,12 +1220,14 @@ Fl</SPAN><SPAN STYLE="font-style: normal">i</SPAN><SPAN STYLE="font-style: norma
 You can find the keys </SPAN><SPAN STYLE="font-style: normal">in</SPAN><SPAN STYLE="font-style: normal">
 </SPAN><I>conf/application.conf</I><SPAN STYLE="font-style: normal">,
 at the bottom of the file.</SPAN></P>
-<H4 CLASS="western"><SPAN STYLE="font-style: normal">Scheduler</SPAN></H4>
+<H4 CLASS="western" STYLE="font-style: normal">Scheduler</H4>
 <P LANG="en-GB">To set the scheduler, we create a private method in
 our <I>app/Global.java</I> class:</P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=1468 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=1440>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -1124,7 +1239,7 @@ our <I>app/Global.java</I> class:</P>
  9
 10</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=1440 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western">    <FONT COLOR="#808080">/*</FONT>
 <FONT COLOR="#808080">    Schedule Actors to retrieve data in the background, asynchronously</FONT>
 <FONT COLOR="#808080">     */</FONT>
@@ -1163,9 +1278,11 @@ solutions</A> to this scenario.</P>
 <P LANG="en-GB">Now that we have the images stored in the database,
 we want to show them. We add a method to our controller in
 <I>Application.java:</I></P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=579 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=12>
+	<COL WIDTH=559>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=12 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western">1
 2
 3
@@ -1174,7 +1291,7 @@ we want to show them. We add a method to our controller in
 6
 7</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=559 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> <FONT COLOR="#505050"><B>@Restrict</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#505050"><B>@Group</B></FONT><FONT COLOR="#303030">(</FONT>Application<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">USER_ROLE</FONT><FONT COLOR="#303030">))</FONT>
  <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>seePhotos</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
         DynamoDbService db <FONT COLOR="#303030">=</FONT> DynamoDbService<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">INSTANCE</FONT><FONT COLOR="#303030">;</FONT>
@@ -1194,9 +1311,11 @@ a list of tags and the photos for the first tag.</P>
 want to see the images of another tag. Instead of loading all the
 images at once, as it would be slow, the template also contains an
 Ajax request that calls another method:</P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=635 CELLPADDING=2 CELLSPACING=0>
+	<COL WIDTH=20>
+	<COL WIDTH=607>
 	<TR>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=20 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western"> 1
  2
  3
@@ -1215,7 +1334,7 @@ Ajax request that calls another method:</P>
 16
 17</PRE>
 		</TD>
-		<TD STYLE="border: none; padding: 0cm">
+		<TD WIDTH=607 STYLE="border: none; padding: 0cm">
 			<PRE CLASS="western">    <FONT COLOR="#505050"><B>@Restrict</B></FONT><FONT COLOR="#303030">(</FONT><FONT COLOR="#505050"><B>@Group</B></FONT><FONT COLOR="#303030">(</FONT>Application<FONT COLOR="#303030">.</FONT><FONT COLOR="#0000c0">USER_ROLE</FONT><FONT COLOR="#303030">))</FONT>
     <FONT COLOR="#008000"><B>public</B></FONT> <FONT COLOR="#008000"><B>static</B></FONT> Result <FONT COLOR="#0060b0"><B>getImagesForTag</B></FONT><FONT COLOR="#303030">()</FONT> <FONT COLOR="#303030">{</FONT>
         String tagId <FONT COLOR="#303030">=</FONT> request<FONT COLOR="#303030">().</FONT><FONT COLOR="#0000c0">getQueryString</FONT><FONT COLOR="#303030">(</FONT><SPAN STYLE="background: #fff0f0">&quot;tag&quot;</SPAN><FONT COLOR="#303030">);</FONT>
@@ -1242,7 +1361,8 @@ secured, as shown at line 1, and receives a tag name in the request
 object(lines 8 to 16) with the metadata of the photos. Th</SPAN><SPAN STYLE="font-style: normal">e</SPAN><SPAN STYLE="font-style: normal">
 Json object is processed by the client to display the images
 requested by the user.</SPAN></P>
-<H2 LANG="en-GB" CLASS="western">Try the Application</H2>
+<H2 LANG="en-GB" CLASS="western"><A NAME="3.3.Try the Application|outline"></A>
+Try the Application</H2>
 <P LANG="en-GB">Now that our sample code has been completed, we can
 execute the application is our development environment to see it in
 action. We open a terminal window, move to the folder where we have
@@ -1250,27 +1370,28 @@ the application and run:</P>
 <P LANG="en-GB">    <I>$play run</I></P>
 <P LANG="en-GB" STYLE="font-style: normal">And we should see
 something like follows:</P>
-<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_6bd83095.jpg" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=383 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_6bd83095.png" NAME="graphics5" ALIGN=LEFT WIDTH=643 HEIGHT=383 BORDER=0><BR><BR clear="left">
 </P>
 <P LANG="en-GB" STYLE="font-style: normal">On start, the logs show us
 the application retrieving images from Flickr. You can verify this is
 an asynchronous task by loading the main page while the external data
 is being loaded. Go to <A HREF="http://localhost:9000/">http://localhost:9000</A>
 to see the main page of the application:</P>
-<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_75d37853.jpg" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_75d37853.png" NAME="graphics6" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
 </P>
 <P LANG="en-GB" STYLE="font-style: normal">As you can see you can
 only try to Sign Up before being able to see any image, thanks to the
 authorization requirements we added when creating the application.
 Press one of the buttons to be redirected to the Sign up page and
 complete the process:</P>
-<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_78f05781.jpg" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_78f05781.png" NAME="graphics7" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
 Once authenticated you are able to see the photos page, where you
 have a list fo tags and, once a tag is selected, a list of images
 associated to that tag:</P>
-<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_mdfcc965.jpg" NAME="graphics8" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
+<P LANG="en-GB" STYLE="font-style: normal"><IMG SRC="creating%20the%20app_html_mdfcc965.png" NAME="graphics8" ALIGN=LEFT WIDTH=643 HEIGHT=407 BORDER=0><BR><BR clear="left">
 </P>
-<H2 CLASS="western">Configuration for Other Environments</H2>
+<H2 CLASS="western"><A NAME="3.4.Configuration for Other Environments|outline"></A>
+Configuration for Other Environments</H2>
 <P LANG="en-GB">Up to know we have been talking about configuration
 in a development environment. But we  want to deploy this application
 in test or production servers, where the settings will be different:
@@ -1282,12 +1403,11 @@ configuration system</A>. One of the advantages of this system is
 that you can define configuration values as JVM system properties.
 What is more, these system properties <I>override</I> any settings in
 the <I>conf</I><SPAN STYLE="font-style: normal"> files.</SPAN></P>
-<P LANG="en-GB"><SPAN STYLE="font-style: normal">What this means for
-us is that we can define our development environment in our
-configuration files. Once we want to deploy in another environment,
-we just need to provide the appropriate JVM parameters to Play. For
-example, to override our Amazon AWS access key we can add this system
-property:</SPAN></P>
+<P LANG="en-GB" STYLE="font-style: normal">What this means for us is
+that we can define our development environment in our configuration
+files. Once we want to deploy in another environment, we just need to
+provide the appropriate JVM parameters to Play. For example, to
+override our Amazon AWS access key we can add this system property:</P>
 <P LANG="en-GB">    <I>-Daws.accesskey=A_New_Key</I></P>
 <P LANG="en-GB"><SPAN STYLE="font-style: normal">This overrides the
 key defined at</SPAN><I> conf/aws/credentials.conf.</I><SPAN STYLE="font-style: normal">
