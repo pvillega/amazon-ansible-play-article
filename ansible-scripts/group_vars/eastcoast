@@ -1,7 +1,0 @@
-# Contains specific variables to be used when deploying to eastcoast machines
-# These variables will then be used in the Playbooks
-# For example, we could set here the endpoint for the Memcached server in eastcoast
-
-# memcacheServer: <address>
----
-eastcoastVar: value

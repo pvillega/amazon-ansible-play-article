@@ -1,0 +1,343 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",  
+  "Description" : "Play Framework Application Template. Create a multi-az, load balanced and Auto Scaled sample web site running on an Play Framework. The application is configured to span all Availability Zones in the region and is Auto-Scaled based on the CPU utilization of the web servers. Notifications will be sent to the operator email address on scaling events. The instances are load balanced with a simple health check against the default web page. The web site is available on port 80, however, the instances can be configured to listen on any port (8888 by default). **WARNING** This template creates one or more Amazon EC2 instances and an Elastic Load Balancer. You will be billed for the AWS resources used if you create a stack from this template.",
+  
+  "Parameters" : {
+  
+  "AMIId" : {
+      "Description" : "AMI id of the web server instance with latest version of the code to be deployed",
+      "Type" : "String"
+    },  
+      
+    "KeyName" : {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type" : "String"
+    },    
+    
+    "InstanceType" : {
+      "Description" : "WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t1.micro",
+      "AllowedValues" : [ "t1.micro","m1.small","m1.medium","m1.large","m1.xlarge","m2.xlarge","m2.2xlarge","m2.4xlarge","m3.xlarge","m3.2xlarge","c1.medium","c1.xlarge","cc1.4xlarge","cc2.8xlarge","cg1.4xlarge"],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+	
+	"WebServerPort" : {
+      "Description" : "The TCP port for the Web Server",
+      "Type" : "Number",
+      "Default" : "8888"
+    },
+  
+    "OperatorEmail": {
+      "Description": "Email address to notify if there are any scaling operations",
+      "Type": "String"
+    },
+	
+    "DBClass" : {
+      "Default" : "db.m1.small",
+      "Description" : "Database instance class",
+      "Type" : "String",
+      "AllowedValues" : [ "db.m1.small", "db.m1.large", "db.m1.xlarge", "db.m2.xlarge", "db.m2.2xlarge", "db.m2.4xlarge" ],
+      "ConstraintDescription" : "must select a valid database instance type."
+    },
+        
+    "DBName" : {
+      "Default": "sampleapp",
+      "Description" : "The Play App database name",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+    
+    "DBUsername" : {
+      "Default": "sampleaws",
+      "NoEcho": "true",
+      "Description" : "The Play App database admin account username",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+    },
+    
+    "DBPassword" : {
+      "Default": "samplepass",
+      "NoEcho": "true",
+      "Description" : "The Play App database admin account password",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "41",
+      "AllowedPattern" : "[a-zA-Z0-9]*",
+      "ConstraintDescription" : "must contain only alphanumeric characters."
+    },
+
+    "MultiAZDatabase": {
+      "Default": "true",
+      "Description" : "Create a multi-AZ MySQL Amazon RDS database instance",
+      "Type": "String",
+      "AllowedValues" : [ "true", "false" ],
+      "ConstraintDescription" : "must be either true or false."
+    },
+
+    "WebServerCapacity": {
+      "Default": "2",
+      "Description" : "The initial number of WebServer instances",
+      "Type": "Number",
+      "MinValue": "1",
+      "MaxValue": "5",
+      "ConstraintDescription" : "must be between 1 and 5 EC2 instances."
+    },
+
+    "DBAllocatedStorage" : {
+      "Default": "5",
+      "Description" : "The size of the database (Gb)",
+      "Type": "Number",
+      "MinValue": "5",
+      "MaxValue": "1024",
+      "ConstraintDescription" : "must be between 5 and 1024Gb."
+    },
+    "SSHLocation" : {
+      "Description" : " The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }  
+  },
+  
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "t1.micro"    : { "Arch" : "64" },
+      "m1.small"    : { "Arch" : "64" },
+      "m1.medium"   : { "Arch" : "64" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "m3.xlarge"   : { "Arch" : "64" },
+      "m3.2xlarge"  : { "Arch" : "64" },
+      "c1.medium"   : { "Arch" : "64" },
+      "c1.xlarge"   : { "Arch" : "64" },
+      "cc1.4xlarge" : { "Arch" : "64HVM" },
+      "cc2.8xlarge" : { "Arch" : "64HVM" },
+      "cg1.4xlarge" : { "Arch" : "64HVM" }
+    },
+
+    "AWSRegionArch2AMI" : {
+      "us-east-1" :      { "32" : "ami-1e314d77", "64" : "ami-10314d79" },
+      "us-west-1" :      { "32" : "ami-ee91b8ab", "64" : "ami-e891b8ad" },
+      "us-west-2" :      { "32" : "ami-2fb3201f", "64" : "ami-11b32021" },
+      "eu-west-1" :      { "32" : "ami-6f75691b", "64" : "ami-6975691d" },
+      "sa-east-1"      : { "32" : "ami-2e369333", "64" : "ami-28369335" },
+      "ap-southeast-1" : { "32" : "ami-128ec740", "64" : "ami-108ec742" },
+      "ap-southeast-2" : { "32" : "ami-ba0f9c80", "64" : "ami-b80f9c82" },
+      "ap-northeast-1" : { "32" : "ami-25f86c24", "64" : "ami-27f86c26" }
+    }
+  },
+    
+  "Resources" : {     
+
+     "tag" : {
+         "Type" : "AWS::DynamoDB::Table",
+         "Properties" : {
+            "KeySchema" : {
+               "HashKeyElement": {
+                  "AttributeName" : "id",
+                  "AttributeType" : "S"
+               }
+            },
+            "ProvisionedThroughput" : {
+               "ReadCapacityUnits" : "5",
+               "WriteCapacityUnits" : "10"
+            }
+         }
+      },
+	  
+   "photo" : {
+         "Type" : "AWS::DynamoDB::Table",
+         "Properties" : {
+            "KeySchema" : {
+               "HashKeyElement": {
+                  "AttributeName" : "idTag",
+                  "AttributeType" : "S"
+               },			   
+               "RangeKeyElement": {
+                  "AttributeName" : "dateStored",
+                  "AttributeType" : "S"
+               }
+            },
+            "ProvisionedThroughput" : {
+               "ReadCapacityUnits" : "5",
+               "WriteCapacityUnits" : "10"
+            }
+         }
+      },
+   
+     "NotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [ {
+            "Endpoint": { "Ref": "OperatorEmail" },
+            "Protocol": "email" } ]
+      }
+    },
+   
+    "ElasticLoadBalancer" : {
+      "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties" : {
+        "AvailabilityZones" : { "Fn::GetAZs" : "" },
+        "Listeners" : [ {
+          "LoadBalancerPort" : "80",
+          "InstancePort" : { "Ref" : "WebServerPort" },
+          "Protocol" : "HTTP"
+        } ],
+        "HealthCheck" : {
+          "Target" : { "Fn::Join" : [ "", ["HTTP:", { "Ref" : "WebServerPort" }, "/"]]},
+          "HealthyThreshold" : "3",
+          "UnhealthyThreshold" : "5",
+          "Interval" : "30",
+          "Timeout" : "5"
+        }
+      }
+    },
+
+      "WebServerGroup" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "AvailabilityZones" : { "Fn::GetAZs" : ""},
+        "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+        "MinSize" : "1",
+        "MaxSize" : "3",
+        "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" } ],
+        "NotificationConfiguration" : {
+          "TopicARN" : { "Ref" : "NotificationTopic" },
+          "NotificationTypes" : [ "autoscaling:EC2_INSTANCE_LAUNCH","autoscaling:EC2_INSTANCE_LAUNCH_ERROR","autoscaling:EC2_INSTANCE_TERMINATE", "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"]
+        }
+      }
+    },
+
+    "LaunchConfig" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "KeyName" : { "Ref" : "KeyName" },
+        "ImageId" : { "Ref" : "AMIId" },
+        "UserData" : { "Fn::Base64" : { "Ref" : "WebServerPort" }},
+        "SecurityGroups" : [ { "Ref" : "WebServerSecurityGroup" } ],
+        "InstanceType" : { "Ref" : "InstanceType" }
+      }
+    },
+
+    "WebServerScaleUpPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "WebServerGroup" },
+        "Cooldown" : "60",
+        "ScalingAdjustment" : "1"
+      }
+    },
+    "WebServerScaleDownPolicy" : {
+      "Type" : "AWS::AutoScaling::ScalingPolicy",
+      "Properties" : {
+        "AdjustmentType" : "ChangeInCapacity",
+        "AutoScalingGroupName" : { "Ref" : "WebServerGroup" },
+        "Cooldown" : "60",
+        "ScalingAdjustment" : "-1"
+      }
+    },
+
+    "CPUAlarmHigh": {
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-up if CPU > 90% for 10 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "2",
+        "Threshold": "90",
+        "AlarmActions": [ { "Ref": "WebServerScaleUpPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "WebServerGroup" }
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold"
+      }
+    },
+    "CPUAlarmLow": {
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-down if CPU < 70% for 10 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "2",
+        "Threshold": "70",
+        "AlarmActions": [ { "Ref": "WebServerScaleDownPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "WebServerGroup" }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold"
+      }
+    },
+
+
+    "DBInstance" : {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBName"            : { "Ref" : "DBName" },
+        "Engine"            : "MySQL",
+        "MultiAZ"           : { "Ref": "MultiAZDatabase" },
+        "MasterUsername"    : { "Ref" : "DBUsername" },
+        "DBInstanceClass"   : { "Ref" : "DBClass" },
+        "DBSecurityGroups"  : [{ "Ref" : "DBSecurityGroup" }],
+        "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
+        "MasterUserPassword": { "Ref" : "DBPassword" }
+      }
+    },
+    
+    "DBSecurityGroup": {
+      "Type": "AWS::RDS::DBSecurityGroup",
+      "Properties": {
+        "DBSecurityGroupIngress": { "EC2SecurityGroupName": { "Ref": "WebServerSecurityGroup"} },
+        "GroupDescription"      : "Frontend Access"
+      }        
+    },    
+    
+    
+    "WebServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP access via port 80 locked down to the load balancer + SSH access",
+        "SecurityGroupIngress" : [
+          {
+          "IpProtocol" : "tcp",
+          "FromPort" : { "Ref" : "WebServerPort" },
+          "ToPort" : { "Ref" : "WebServerPort" },
+          "SourceSecurityGroupOwnerId" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "SourceSecurityGroup.OwnerAlias"]},
+          "SourceSecurityGroupName" : {"Fn::GetAtt" : ["ElasticLoadBalancer", "SourceSecurityGroup.GroupName"]}
+          },
+          {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref" : "SSHLocation"}}
+        ]
+      }      
+    }
+  },
+  
+  "Outputs" : {
+    "WebsiteURL" : {
+      "Value" : { "Fn::Join" : ["", ["http://", { "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ]}, "/wordpress"]] },
+      "Description" : "WordPress Website"
+    }
+  }
+}

@@ -1,6 +1,0 @@
-# Defines all the infrastructure required by the site, both web and db servers
-# The file just includes the playbooks is in
-- include: webservers.yml
-# As we rely on RDS we won't run the dbservers part. Uncomment this if you are using your own EC2 instanes as db servers, but be aware you will need to define the Playbooks for dbservers.
-#- include: dbservers.yml
-

@@ -1,0 +1,13 @@
+# Defines the Playbook to set up the Cloudformation structure AMI 
+- name: Create CloudFormation structure
+  hosts: local
+  connection: local
+  user: root
+  gather_facts: false
+  tags:
+    - cloudformation
+  roles:
+    - cloudformation
+
+
+    

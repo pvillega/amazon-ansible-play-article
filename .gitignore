@@ -17,6 +17,7 @@ dist
 *.iml
 *.ipr
 *~
+*.pem
 
 play.h2.db
 play.trace.db

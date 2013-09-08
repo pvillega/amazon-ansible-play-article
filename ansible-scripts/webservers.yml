@@ -1,9 +1,0 @@
-# Defines the Playbook to set up the webservers. 
-# This playbook targets any host defined as webserver
-# The roles contains a set of scripts to be run that this Playbook will load, in order
-- name: webservers setup
-  hosts: webservers
-  roles:
-  - common
-  - webtier
-

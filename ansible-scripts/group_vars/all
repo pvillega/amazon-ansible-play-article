@@ -1,18 +1,25 @@
-# Contains specific variables to be used when deploying to any subgroup
-# These variables will then be used in the Playbooks
-# For example, we could set here values like the administration email to get system notifications, which will be common to all servers 
-
+# Contains variables for the create role
+# For example, we could set here values like the administration email to get system notifications
 # adminEmail: myemail@admin.com
 ---
-#  List of vars used by common role
+# List of vars used by create role and saveAMI role
+keypair: sample-play-aws
+ec2_region: eu-west-1
+instance_type: m1.small
+sec_group_name: sample-play-aws
+sec_group_id: sg-4eed7139 
+# Ubuntu 13.04 64bits - Ubuntu Cloud Guest AMI ID ami-3d160149 (x86_64)
+image: ami-3d160149
+custom_ami_name: sample-play-aws-ami
+
+# List of vars used by secure role
 ubuntu_release: quantal
 ec2_user: ubuntu
+group: $ec2_user
 logwatch_email: your.admin.email@mail.com
 
-# List of vars used by webtier role
-user: ubuntu
-group: $user
-play_version: 2.1.1
+# List of vars used by deploy role
+play_version: 2.1.3
 home: /home/ubuntu
 pvm: /home/ubuntu/pvm
 pvm_path: ${home}/pvm/install/$play_version
@@ -26,5 +33,15 @@ dest: ${home}/projectClone
 dest_app: $dest/play-sample-app
 project_version: 1.0-SNAPSHOT
 project: play-sample-app-$project_version
+
+
+# Cloudformation script values
+template: /home/pvillega/Dropbox/Projectes/amazon-article/ansible-scripts/roles/cloudformation/files/PlayFrameworkApp.json
+cf_ami: ami-4896733f
+db_username: aws
+db_password: password
+
+
+
 
 

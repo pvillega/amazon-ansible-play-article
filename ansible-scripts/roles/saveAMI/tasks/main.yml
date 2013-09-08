@@ -1,0 +1,10 @@
+# Saves an EC2 instance as a custom AMI and removes the instance
+---
+- name: Create custom AMI from EC2 instance
+  local_action: ec2_ami instance_id=${ec2.instance_ids} region=${ec2_region} name=${custom_ami_name} wait=yes  
+  register: instance
+
+- name: Terminate instances that were previously launched
+  local_action: ec2 key_name=${keypair} group=${sec_group_name} region=${ec2_region} state='absent' instance_ids=${ec2.instance_ids} wait=yes
+
+

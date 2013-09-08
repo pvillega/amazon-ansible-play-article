@@ -1,0 +1,81 @@
+# Secures an AMI (Ubuntu based)
+---
+- name: Update APT package cache
+  apt: update_cache=yes
+
+- name: Run apt-get upgrade
+  apt: upgrade=yes
+
+- name: Install fail2ban
+  apt: pkg=fail2ban state=present
+
+- name: Disallow root SSH access
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^PermitRootLogin" line="PermitRootLogin no" state=present 
+
+- name: Disallow password authentication
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+
+# Ensure only selected users can sudo      
+- name: create group admin
+  group: name=admin state=present
+- name: add ec2 user to admin group
+  user: name=$user group=admin state=present
+- name: Protect su by limiting access only to admin group.
+  action: command dpkg-statoverride --update --force --add root admin 4750 /bin/su
+
+- name: Install rootkit detection
+  apt: pkg=chkrootkit state=present
+- name: Install rootkit detection
+  apt: pkg=rkhunter state=present
+
+- name: Install unattended-upgrades
+  apt: pkg=unattended-upgrades state=present
+
+- name: Adjust APT update intervals
+  copy: src=apt_periodic dest=/etc/apt/apt.conf.d/10periodic
+
+- name: Copy debconf selections so that Postfix can configure itself non-interactively
+  copy: src=postfix_selections  dest=/tmp/postfix_selections
+
+- name: Set up Postfix to relay mail
+  action: command debconf-set-selections /tmp/postfix_selections
+
+- name: Install logwatch
+  apt: pkg=logwatch state=present
+
+- name: Make logwatch mail $logwatch_email daily
+  lineinfile: dest=/etc/cron.daily/00logwatch regexp="^/usr/sbin/logwatch" line="/usr/sbin/logwatch --output mail --mailto $logwatch_email --detail high" state=present 
+
+- name: Prevent IP spoofing
+  lineinfile: dest=/etc/host.conf regexp="^order" line="order bind,hosts" state=present  
+- name: Prevent IP spoofing
+  lineinfile: dest=/etc/host.conf regexp="^nospoof" line="nospoof on" state=present
+
+- name: Intrusion detection PSAD
+  apt: pkg=psad state=present
+- name: Configure PSAD
+  lineinfile: dest=/etc/psad/psad.conf regexp="^EMAIL_ADDRESSES" line="EMAIL_ADDRESSES             $logwatch_email;" state=present
+- name: Configure PSAD (IPtables)
+  action: command iptables -A INPUT -j LOG
+- name: Configure PSAD (IPtables)
+  action: command iptables -A FORWARD -j LOG
+- name: Configure PSAD (IP6tables)
+  action: command ip6tables -A INPUT -j LOG
+- name: Configure PSAD (IP6tables)
+  action: command ip6tables -A FORWARD -j LOG
+- name: Configure PSAD (update signatures)
+  action: command psad --sig-update
+  async: 10
+  ignore_errors: yes
+
+- name: SELinux 
+  apt: pkg=apparmor state=present  
+- name: SELinux
+  apt: pkg=apparmor-profiles state=present  
+
+- name: DenyHosts
+  apt: pkg=denyhosts state=present  
+
+- name: Secure shm 
+  lineinfile: dest=/etc/fstab  regexp="^tmpfs" line="tmpfs     /dev/shm     tmpfs     defaults,noexec,nosuid     0     0" state=present
+

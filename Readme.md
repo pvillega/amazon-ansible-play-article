@@ -1,13 +1,13 @@
 # Amazon AWS and Play
 
-This project is a sample on how to create a Play 2.1.1 project integrated with Amazon services (RDS and DynamoDB) and how to use Ansible to automatically deploy it in EC2 instances.
+This project is a sample on how to create a Play 2.1.3 project integrated with Amazon AWS (RDS, DynamoDB, autoscale) and how to use Ansible to automatically deploy it in AWS.
 
 The following content is included:
-* play-sample-app     A sample Play 2.1.1 app that integrates with AWS. It displays Flickr photos whose details are stored in DynamoDB. Integrates user authentication.
-* ansible-scripts     A set of Ansible scripts to deploy the sample app in Amazon EC2
+* play-sample-app     A sample Play 2.1.3 app that integrates with AWS. It displays Flickr photos whose details are stored in DynamoDB. Integrates user authentication.
+* ansible-scripts     A set of Ansible scripts to deploy the sample app in Amazon AWS
 * article-content     The contents of the article published in Amazon Developer Network
 
-As a sample, the contents of this project can be used to create your own project and deploy it in EC2. Just use this as a template and extend as required.
+As a sample, the contents of this project can be used to create your own project and deploy it in AWS. Just use this as a template and extend as required.
 
 # License
 

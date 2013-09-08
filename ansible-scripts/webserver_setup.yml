@@ -1,0 +1,46 @@
+# Defines the Playbook to set up the webserver AMI 
+- name: Create AMI
+  hosts: local
+  connection: local
+  user: root
+  gather_facts: false
+  tags:
+    - stage
+  roles:
+    - create
+
+# Secures the AMI created in the previous step. The AMI was added to host group 'deploy' by default
+- name: Configure instance
+  hosts: deploy
+  user: ${ec2_user}
+  sudo: yes
+  gather_facts: true
+  tags:
+    - secure
+  roles:
+    - secure
+
+# AMI has been secured, deploy app. The AMI was added to host group 'deploy' by default 
+- name: Deploy webapp from Github
+  hosts: deploy
+  user: ${ec2_user}
+  sudo: yes
+  gather_facts: true
+  tags:
+    - deploy
+  roles:
+    - deploy
+
+# Saves the custom AMI, terminates the instance and launches cloudformation
+- name: Save AMI, terminate instance and launch cloudformation
+  hosts: local
+  connection: local
+  user: root
+  gather_facts: false
+  tags:
+    - saveAMI
+  roles:
+    - saveAMI
+
+    
+

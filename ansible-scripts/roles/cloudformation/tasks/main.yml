@@ -1,0 +1,15 @@
+# Launches Cloudformation stack
+---
+- name: Launch Cloudformation stack
+  action: cloudformation stack_name="sample-play-aws" state=present region=${ec2_region} template=${template}
+  args:
+    template_parameters:
+      AMIId: ${cf_ami}
+      KeyName: ${keypair}
+      InstanceType: m1.small
+      WebServerPort: 80
+      OperatorEmail: ${logwatch_email}
+      DBClass: db.m1.small
+      DBUsername: ${db_username}
+      DBPassword: ${db_password}
+
